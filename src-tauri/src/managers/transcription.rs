@@ -114,13 +114,16 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
 /// Inserts finalized text into the focused field and emits a `done` event.
 fn finalize(app: &AppHandle, text: &str) {
     if text.trim().is_empty() {
+        eprintln!("[finalize] empty text, skipping paste");
         return;
     }
+    eprintln!("[finalize] pasting: {:?}", text);
     match crate::paste::paste(app, text) {
         Ok(()) => {
             let _ = app.emit("transcription-done", text.to_string());
         }
         Err(e) => {
+            eprintln!("[finalize] paste error: {e}");
             let _ = app.emit("transcription-error", e);
         }
     }

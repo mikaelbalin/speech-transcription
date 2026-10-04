@@ -24,6 +24,10 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
         .write_text(text.to_string())
         .map_err(|e| format!("Failed to write clipboard: {e}"))?;
 
+    // Give the compositor a moment to register us as the clipboard owner
+    // before sending the paste keystroke (needed on Wayland).
+    std::thread::sleep(std::time::Duration::from_millis(150));
+
     let result = send_paste_keystroke();
 
     // On failure (e.g. uinput unavailable on Wayland), the text is already in
@@ -32,7 +36,11 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
         eprintln!("[paste] auto-paste failed: {e}. Text left in clipboard.");
     }
 
-    // Restore the original clipboard content.
+    // Restore the original clipboard content AFTER the paste has had time to
+    // be delivered. On Wayland the compositor serves the clipboard
+    // asynchronously, so restoring immediately would clobber the text before
+    // the focused app reads it (the paste would insert stale/empty content).
+    std::thread::sleep(std::time::Duration::from_millis(300));
     match saved {
         Some(previous) => {
             let _ = app.clipboard().write_text(previous);

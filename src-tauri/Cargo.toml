@@ -35,7 +35,7 @@ enigo = "0.6"
 cpal = "0.15"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-mouse-keyboard-input = "0.5"
+libc = "0.2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
