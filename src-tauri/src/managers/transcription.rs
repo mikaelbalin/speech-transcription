@@ -47,6 +47,10 @@ impl TranscriptionManager {
 
 /// Runs the full capture → transcribe → paste flow.
 fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
+    // Install the Rustls crypto provider (ring) before the first TLS connection.
+    // Safe to call repeatedly; ignores the error if already installed.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let settings = get_settings(app);
 
     let mut recorder = crate::audio::Recorder::start(settings.sample_rate)?;
