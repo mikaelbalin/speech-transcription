@@ -27,8 +27,10 @@ export function Dictation() {
       listen<string>("transcription-delta", (e) => {
         setLiveText((t) => t + e.payload);
       }),
-      listen("transcription-done", () => {
+      listen<string>("transcription-done", (e) => {
         setLiveText("");
+        setError(null);
+        void e.payload;
       }),
       listen<string>("transcription-error", (e) => {
         setError(e.payload);
@@ -43,15 +45,26 @@ export function Dictation() {
   }, [toggle]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Button
-        onClick={toggle}
-        variant={isRecording ? "destructive" : "default"}
-      >
-        {isRecording ? "Stop" : "Start dictation"}
-      </Button>
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={toggle}
+          variant={isRecording ? "destructive" : "default"}
+        >
+          {isRecording ? "Stop" : "Start dictation"}
+        </Button>
+        {isRecording && (
+          <span className="text-sm text-muted-foreground">Listening…</span>
+        )}
+      </div>
 
-      {liveText && <p className="text-sm text-muted-foreground">{liveText}</p>}
+      <textarea
+        readOnly
+        value={liveText}
+        placeholder="Transcribed text will appear here…"
+        className="min-h-32 w-full resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      />
+
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
