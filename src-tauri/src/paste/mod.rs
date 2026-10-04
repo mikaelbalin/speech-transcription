@@ -26,6 +26,12 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
 
     let result = send_paste_keystroke();
 
+    // On failure (e.g. uinput unavailable on Wayland), the text is already in
+    // the clipboard — log it so the user knows auto-paste did not happen.
+    if let Err(e) = &result {
+        eprintln!("[paste] auto-paste failed: {e}. Text left in clipboard.");
+    }
+
     // Restore the original clipboard content.
     match saved {
         Some(previous) => {

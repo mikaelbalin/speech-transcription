@@ -14,7 +14,6 @@ const READ_BUF_SIZE: usize = 640;
 /// service.
 pub struct ParecRecorder {
     child: Child,
-    sample_rate: u32,
 }
 
 impl ParecRecorder {
@@ -33,12 +32,7 @@ impl ParecRecorder {
             .spawn()
             .map_err(|e| format!("Failed to spawn parec: {e}"))?;
 
-        Ok(Self { child, sample_rate })
-    }
-
-    /// The sample rate this recorder produces audio at.
-    pub fn sample_rate(&self) -> u32 {
-        self.sample_rate
+        Ok(Self { child })
     }
 }
 

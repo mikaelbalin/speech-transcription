@@ -5,10 +5,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
 mod protocol;
-pub use protocol::{MistralError, TranscriptionEvent};
-
-/// Default model id for realtime transcription.
-pub const DEFAULT_MODEL: &str = "voxtral-mini-transcribe-realtime-2602";
+pub use protocol::TranscriptionEvent;
 
 type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
 

@@ -22,11 +22,6 @@ impl TranscriptionManager {
         }
     }
 
-    /// Whether a dictation session is currently active.
-    pub fn is_running(&self) -> bool {
-        self.running.load(Ordering::Acquire)
-    }
-
     /// Starts a dictation session. Returns immediately; the work runs on a
     /// background thread. No-op if a session is already running.
     pub fn start(&self, app: AppHandle) {
@@ -103,7 +98,7 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
         let _ = event_task.await;
 
         // Paste any remaining accumulated text.
-        let mut b = buffer.lock().unwrap();
+        let b = buffer.lock().unwrap();
         if !b.is_empty() {
             finalize(app, &b);
         }
