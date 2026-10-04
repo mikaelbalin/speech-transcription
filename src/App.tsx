@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import "./App.css";
+import { Button } from "@/components/ui/button";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -16,7 +17,7 @@ function App() {
       <h1 className="text-amber-900">Welcome to Tauri + React</h1>
 
       <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
+      <Button>Button</Button>
       <form
         className="row"
         onSubmit={(e) => {
