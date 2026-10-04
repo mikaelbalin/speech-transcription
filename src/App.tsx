@@ -1,38 +1,10 @@
-import { invoke } from "@tauri-apps/api/core";
-import { useState } from "react";
 import "./App.css";
-import { Button } from "@/components/ui/button";
+import { SettingsForm } from "@/components/SettingsForm";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
   return (
-    <main className="container">
-      <h1 className="text-amber-900">Welcome to Tauri + React</h1>
-
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-      <Button>Button</Button>
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+    <main className="flex min-h-screen items-start justify-center p-8">
+      <SettingsForm />
     </main>
   );
 }
