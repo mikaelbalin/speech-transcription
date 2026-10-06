@@ -2,6 +2,7 @@ mod audio;
 mod commands;
 mod managers;
 mod mistral;
+mod overlay;
 mod paste;
 mod settings;
 mod shortcut;
@@ -21,6 +22,7 @@ pub fn run() {
         .setup(|app| {
             let settings = settings::get_settings(app.handle());
             let _ = shortcut::register(app.handle(), &settings.shortcut);
+            overlay::create_overlay(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

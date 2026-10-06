@@ -15,6 +15,15 @@ export default defineConfig(() => ({
     },
   },
 
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, "index.html"),
+        overlay: path.resolve(import.meta.dirname, "src/overlay/index.html"),
+      },
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

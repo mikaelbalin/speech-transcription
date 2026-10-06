@@ -53,6 +53,8 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
 
     let settings = get_settings(app);
 
+    crate::overlay::show_overlay(app);
+
     let mut recorder = crate::audio::Recorder::start(settings.sample_rate)?;
 
     let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
@@ -106,6 +108,8 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
         if !b.is_empty() {
             finalize(app, &b);
         }
+
+        crate::overlay::hide_overlay(app);
 
         Ok(())
     })
