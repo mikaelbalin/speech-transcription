@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 
-import { type AppSettings, SettingsForm } from "@/components/SettingsForm";
+import {
+  type AppSettings,
+  SettingsForm,
+} from "@/components/pages/settings-form";
 
 const settingsSearchSchema = z.object({
   tab: z.enum(["general", "audio", "shortcut"]).catch("general"),

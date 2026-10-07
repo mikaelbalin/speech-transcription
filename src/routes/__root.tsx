@@ -5,7 +5,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ModeToggle } from "@/components/mode-toggle";
-import type { AppSettings } from "@/components/SettingsForm";
+import type { AppSettings } from "@/components/pages/settings-form";
 
 export interface RouterContext {
   settings: AppSettings | null;

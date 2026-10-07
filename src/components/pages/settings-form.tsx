@@ -12,6 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from "@/components/ui/combobox";
+import {
   Field,
   FieldError,
   FieldGroup,
@@ -38,6 +46,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const MODELS = [
+  "mistral-realtime-voice-v1",
+  "mistral-embed-speech",
+  "whisper-large-v3-turbo",
+];
+
 export function SettingsForm({
   initialSettings,
 }: {
@@ -46,7 +60,7 @@ export function SettingsForm({
   const form = useForm({
     defaultValues: {
       apiKey: initialSettings?.apiKey ?? "",
-      model: initialSettings?.model ?? "voxtral-mini-transcribe-realtime-2602",
+      model: initialSettings?.model ?? "mistral-realtime-voice-v1",
       baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
       shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
     } as FormValues,
@@ -121,15 +135,28 @@ export function SettingsForm({
 
             <Field data-invalid={invalidOf(modelField.state.meta)}>
               <FieldLabel htmlFor="settings-model">Model</FieldLabel>
-              <Input
-                id="settings-model"
-                name={modelField.name}
+              <Combobox
                 value={modelField.state.value}
-                onBlur={modelField.handleBlur}
-                onChange={(e) => modelField.handleChange(e.target.value)}
-                aria-invalid={invalidOf(modelField.state.meta)}
-                autoComplete="off"
-              />
+                onValueChange={(value) => {
+                  if (value) modelField.handleChange(value);
+                }}
+              >
+                <ComboboxInput
+                  showClear={false}
+                  placeholder="Select a model"
+                  aria-invalid={invalidOf(modelField.state.meta)}
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    {MODELS.map((model) => (
+                      <ComboboxItem key={model} value={model}>
+                        {model}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+                <ComboboxValue>{modelField.state.value}</ComboboxValue>
+              </Combobox>
               {invalidOf(modelField.state.meta) && (
                 <FieldError errors={modelField.state.meta.errors} />
               )}
