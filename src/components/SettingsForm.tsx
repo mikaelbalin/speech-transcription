@@ -38,13 +38,17 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function SettingsForm() {
+export function SettingsForm({
+  initialSettings,
+}: {
+  initialSettings?: AppSettings | null;
+}) {
   const form = useForm({
     defaultValues: {
-      apiKey: "",
-      model: "voxtral-mini-transcribe-realtime-2602",
-      baseUrl: "wss://api.mistral.ai",
-      shortcut: "ctrl+alt+space",
+      apiKey: initialSettings?.apiKey ?? "",
+      model: initialSettings?.model ?? "voxtral-mini-transcribe-realtime-2602",
+      baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
+      shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
     } as FormValues,
     validators: {
       onChange: formSchema,
@@ -71,18 +75,12 @@ export function SettingsForm() {
   const isSubmitting = useSelector(form.store, (s) => s.isSubmitting);
 
   useEffect(() => {
-    let cancelled = false;
-    invoke<AppSettings>("get_settings").then((s) => {
-      if (cancelled) return;
-      form.setFieldValue("apiKey", s.apiKey);
-      form.setFieldValue("model", s.model);
-      form.setFieldValue("baseUrl", s.baseUrl);
-      form.setFieldValue("shortcut", s.shortcut);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [form]);
+    if (!initialSettings) return;
+    form.setFieldValue("apiKey", initialSettings.apiKey);
+    form.setFieldValue("model", initialSettings.model);
+    form.setFieldValue("baseUrl", initialSettings.baseUrl);
+    form.setFieldValue("shortcut", initialSettings.shortcut);
+  }, [form, initialSettings]);
 
   const invalidOf = (meta: { isTouched: boolean; isValid: boolean }) =>
     meta.isTouched && !meta.isValid;
