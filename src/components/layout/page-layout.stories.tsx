@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DictationLayout } from "./dictation-layout";
+import { PageLayout } from "./page-layout";
 
-const meta: Meta<typeof DictationLayout> = {
-  title: "Dictation/DictationLayout",
-  component: DictationLayout,
+const meta: Meta<typeof PageLayout> = {
+  title: "Layout/PageLayout",
+  component: PageLayout,
   parameters: {
     layout: "fullscreen",
   },
@@ -24,7 +24,7 @@ const meta: Meta<typeof DictationLayout> = {
 
 export default meta;
 
-type Story = StoryObj<typeof DictationLayout>;
+type Story = StoryObj<typeof PageLayout>;
 
 export const Default: Story = {
   args: {

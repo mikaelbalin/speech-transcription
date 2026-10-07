@@ -2,10 +2,10 @@ import { cn } from "cn";
 import type { HTMLAttributes } from "react";
 
 /**
- * Top section of the dictation layout. Holds contextual status (device/model
- * badges, error banner, recording indicator) above the main content.
+ * Top section of the page layout. Holds contextual status (device/model
+ * badges, error banner, page title) above the main content.
  */
-export function DictationHeader({
+export function PageHeader({
   className,
   ...props
 }: HTMLAttributes<HTMLElement>) {
@@ -21,28 +21,25 @@ export function DictationHeader({
 }
 
 /**
- * Middle section of the dictation layout. This is the flexible region: it
- * grows to fill available space so the footer stays pinned to the bottom of
- * the screen regardless of how tall the content is.
+ * Middle section of the page layout. This is the flexible region: it grows to
+ * fill available space so the footer stays pinned to the bottom of the screen
+ * regardless of how tall the content is.
  *
  * The content inside the body is kept to a centered, readable column
  * (`max-w-md mx-auto w-full`), while the header and footer above/below span
  * the full width of the screen.
  */
-export function DictationBody({
-  className,
-  ...props
-}: HTMLAttributes<HTMLElement>) {
+export function PageBody({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
     <section className={cn("flex flex-1 flex-col", className)} {...props} />
   );
 }
 
 /**
- * Bottom section of the dictation layout. Always anchored to the bottom of
- * the screen; the body above absorbs any extra vertical space.
+ * Bottom section of the page layout. Always anchored to the bottom of the
+ * screen; the body above absorbs any extra vertical space.
  */
-export function DictationFooter({
+export function PageFooter({
   className,
   ...props
 }: HTMLAttributes<HTMLElement>) {
@@ -58,17 +55,17 @@ export function DictationFooter({
 }
 
 /**
- * Shared shell for every dictation view (idle, recording, error).
+ * Shared shell for every page view (dictation idle/recording/error, settings).
  *
  * Composed of three vertical sections — header, body, footer — laid out as a
- * full-height column. The body (`flex-1 min-h-0`) absorbs any extra space so
- * the footer is always pinned to the bottom of the screen regardless of the
- * body's content height.
+ * full-height column. The body (`flex-1`) absorbs any extra space so the
+ * footer is always pinned to the bottom of the screen regardless of the
+ * body's content height, while never shrinking below its own content.
  *
  * Each view is responsible for filling the three named slots; the layout only
  * owns the geometry and spacing.
  */
-export function DictationLayout({
+export function PageLayout({
   header,
   children,
   footer,
@@ -84,13 +81,13 @@ export function DictationLayout({
       className={cn("flex h-full w-full flex-1 flex-col gap-4", className)}
       {...props}
     >
-      {header ? <DictationHeader>{header}</DictationHeader> : null}
-      <DictationBody>
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+      {header ? <PageHeader>{header}</PageHeader> : null}
+      <PageBody>
+        <div className="mx-auto flex w-full flex-1 flex-col justify-center">
           {children}
         </div>
-      </DictationBody>
-      {footer ? <DictationFooter>{footer}</DictationFooter> : null}
+      </PageBody>
+      {footer ? <PageFooter>{footer}</PageFooter> : null}
     </div>
   );
 }

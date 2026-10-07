@@ -1,5 +1,5 @@
 import { ArrowLeft, MicOff, RefreshCw } from "lucide-react";
-import { DictationLayout } from "@/components/dictation/dictation-layout";
+import { PageLayout } from "@/components/layout/page-layout";
 import type { DictationErrorInfo } from "@/components/pages/dictation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -107,11 +107,11 @@ export function DictationError({
   onBack: () => void;
 }) {
   return (
-    <DictationLayout
+    <PageLayout
       header={<ErrorHeader error={error} />}
       footer={<ErrorFooter onBack={onBack} onRetry={onRetry} />}
     >
       <ErrorBody />
-    </DictationLayout>
+    </PageLayout>
   );
 }

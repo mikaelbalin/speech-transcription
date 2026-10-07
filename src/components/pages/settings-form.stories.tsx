@@ -5,9 +5,6 @@ import { SettingsForm } from "./settings-form";
 const meta: Meta<typeof SettingsForm> = {
   title: "Pages/SettingsForm",
   component: SettingsForm,
-  parameters: {
-    layout: "centered",
-  },
   tags: ["autodocs"],
   args: {
     initialSettings: null,

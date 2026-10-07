@@ -1,6 +1,6 @@
 import { Mic } from "lucide-react";
 
-import { DictationLayout } from "@/components/dictation/dictation-layout";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -85,8 +85,8 @@ function IdleFooter() {
 
 export function DictationIdle({ onStart }: { onStart: () => void }) {
   return (
-    <DictationLayout header={<IdleHeader />} footer={<IdleFooter />}>
+    <PageLayout header={<IdleHeader />} footer={<IdleFooter />}>
       <IdleBody onStart={onStart} />
-    </DictationLayout>
+    </PageLayout>
   );
 }

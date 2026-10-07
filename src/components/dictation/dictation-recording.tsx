@@ -1,6 +1,6 @@
 import { Check, Mic, X } from "lucide-react";
 
-import { DictationLayout } from "@/components/dictation/dictation-layout";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -97,11 +97,11 @@ export function DictationRecording({
   onCancel: () => void;
 }) {
   return (
-    <DictationLayout
+    <PageLayout
       header={<RecordingHeader />}
       footer={<RecordingFooter onCancel={onCancel} />}
     >
       <RecordingBody liveText={liveText} />
-    </DictationLayout>
+    </PageLayout>
   );
 }
