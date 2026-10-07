@@ -12,7 +12,7 @@ export function DictationHeader({
   return (
     <header
       className={cn(
-        "flex shrink-0 items-center justify-between gap-2",
+        "flex shrink-0 items-center justify-between gap-2 px-8",
         className,
       )}
       {...props}
@@ -24,16 +24,17 @@ export function DictationHeader({
  * Middle section of the dictation layout. This is the flexible region: it
  * grows to fill available space so the footer stays pinned to the bottom of
  * the screen regardless of how tall the content is.
+ *
+ * The content inside the body is kept to a centered, readable column
+ * (`max-w-md mx-auto w-full`), while the header and footer above/below span
+ * the full width of the screen.
  */
 export function DictationBody({
   className,
   ...props
 }: HTMLAttributes<HTMLElement>) {
   return (
-    <section
-      className={cn("flex min-h-0 flex-1 flex-col", className)}
-      {...props}
-    />
+    <section className={cn("flex flex-1 flex-col", className)} {...props} />
   );
 }
 
@@ -48,7 +49,7 @@ export function DictationFooter({
   return (
     <footer
       className={cn(
-        "flex shrink-0 items-center justify-between gap-2",
+        "flex shrink-0 items-center justify-between gap-2 px-8",
         className,
       )}
       {...props}
@@ -80,11 +81,15 @@ export function DictationLayout({
 } & HTMLAttributes<HTMLElement>) {
   return (
     <div
-      className={cn("flex h-full w-full max-w-md flex-col gap-4", className)}
+      className={cn("flex h-full w-full flex-1 flex-col gap-4", className)}
       {...props}
     >
       {header ? <DictationHeader>{header}</DictationHeader> : null}
-      <DictationBody>{children}</DictationBody>
+      <DictationBody>
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+          {children}
+        </div>
+      </DictationBody>
       {footer ? <DictationFooter>{footer}</DictationFooter> : null}
     </div>
   );

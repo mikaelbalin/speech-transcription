@@ -31,7 +31,7 @@ function RecordingHeader() {
 
 function RecordingBody({ liveText }: { liveText: string }) {
   return (
-    <Card className="flex flex-1 flex-col">
+    <Card className="flex w-full flex-col">
       <CardHeader className="flex-row items-center justify-between border-b">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />

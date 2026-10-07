@@ -30,7 +30,7 @@ function ErrorHeader({ error }: { error: DictationErrorInfo }) {
 
 function ErrorBody() {
   return (
-    <Card className="my-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Troubleshooting Steps</CardTitle>
       </CardHeader>

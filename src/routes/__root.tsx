@@ -27,8 +27,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 p-8">
-      <nav className="flex items-center gap-3">
+    <main className="flex min-h-dvh flex-col">
+      <nav className="flex items-center gap-3 p-8 pb-0">
         <Link
           to="/"
           preload="intent"
@@ -46,7 +46,9 @@ function RootLayout() {
         </Link>
         <ModeToggle />
       </nav>
-      <Outlet />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <Outlet />
+      </div>
       <TanStackRouterDevtools />
     </main>
   );
