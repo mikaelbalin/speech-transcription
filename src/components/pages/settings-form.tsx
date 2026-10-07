@@ -1,12 +1,11 @@
 import { useField, useForm, useSelector } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { Check, Eye, EyeOff, Network } from "lucide-react";
+import { Check, Eye, EyeOff, Keyboard, Network, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Combobox,
@@ -27,7 +26,11 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
+  InputGroupText,
 } from "@/components/ui/input-group";
+import { Kbd } from "@/components/ui/kbd";
+import { shortcutParts } from "@/lib/shortcut";
+import { useShortcutRecorder } from "@/lib/use-shortcut-recorder";
 
 // Shared shape with the Rust `AppSettings` (serde camelCase).
 export interface AppSettings {
@@ -95,6 +98,10 @@ export function SettingsForm({
   const baseUrlField = useField({ form, name: "baseUrl" });
   const shortcutField = useField({ form, name: "shortcut" });
 
+  const { recording, toggleRecording } = useShortcutRecorder((shortcut) => {
+    shortcutField.handleChange(shortcut);
+  });
+
   const canSubmit = useSelector(form.store, (s) => s.canSubmit);
   const isSubmitting = useSelector(form.store, (s) => s.isSubmitting);
 
@@ -109,13 +116,16 @@ export function SettingsForm({
   const invalidOf = (meta: { isTouched: boolean; isValid: boolean }) =>
     meta.isTouched && !meta.isValid;
 
+  const shortcut = shortcutField.state.value;
+  const hasShortcut = shortcut.trim().length > 0;
+
   return (
     <PageLayout
       header={
         <div className="flex w-full items-center justify-between">
           <div>
             <h1 className="font-heading text-base leading-snug font-medium">
-              Engine Configuration
+              Configuration
             </h1>
             <p className="text-sm text-muted-foreground">
               Manage Mistral realtime inference endpoints, audio devices, and
@@ -123,9 +133,6 @@ export function SettingsForm({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="font-mono">
-              Config: config.json
-            </Badge>
             <AppHeaderActions />
           </div>
         </div>
@@ -159,14 +166,9 @@ export function SettingsForm({
           {/* Row 1: API Key & Model */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field data-invalid={invalidOf(apiKeyField.state.meta)}>
-              <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="settings-api-key">
-                  Mistral API Key
-                </FieldLabel>
-                <Badge variant="outline" className="font-mono">
-                  Active License
-                </Badge>
-              </div>
+              <FieldLabel htmlFor="settings-api-key">
+                Mistral API Key
+              </FieldLabel>
               <InputGroup>
                 <InputGroupInput
                   id="settings-api-key"
@@ -252,29 +254,53 @@ export function SettingsForm({
             </Field>
 
             <Field data-invalid={invalidOf(shortcutField.state.meta)}>
-              <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="settings-shortcut">
-                  Global Activation Hotkey
-                </FieldLabel>
-                <span className="text-xs text-muted-foreground/80">
-                  Click badge to re-bind
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-input px-3 py-1.5">
-                <Input
-                  id="settings-shortcut"
-                  name={shortcutField.name}
-                  value={shortcutField.state.value}
-                  onBlur={shortcutField.handleBlur}
-                  onChange={(e) => shortcutField.handleChange(e.target.value)}
-                  aria-invalid={invalidOf(shortcutField.state.meta)}
-                  autoComplete="off"
-                  className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-                />
-                <Badge variant="secondary" className="uppercase">
-                  Registered
-                </Badge>
-              </div>
+              <FieldLabel htmlFor="settings-shortcut">
+                Global Activation Hotkey
+              </FieldLabel>
+              <InputGroup className="justify-between">
+                {recording ? (
+                  <InputGroupInput
+                    id="settings-shortcut"
+                    placeholder="Press a key…"
+                    readOnly
+                  />
+                ) : hasShortcut ? (
+                  <InputGroupAddon align="inline-start">
+                    {shortcutParts(shortcut).map(({ key, node }) => (
+                      <Kbd key={key}>{node}</Kbd>
+                    ))}
+                  </InputGroupAddon>
+                ) : (
+                  <InputGroupAddon align="inline-start">
+                    <InputGroupText>Not set</InputGroupText>
+                  </InputGroupAddon>
+                )}
+
+                <InputGroupAddon align="inline-end">
+                  {hasShortcut && !recording && (
+                    <InputGroupButton
+                      size="icon-xs"
+                      type="button"
+                      aria-label="Clear hotkey"
+                      onClick={() => shortcutField.handleChange("")}
+                    >
+                      <X className="size-3.5" />
+                    </InputGroupButton>
+                  )}
+                  <InputGroupButton
+                    size="icon-xs"
+                    type="button"
+                    aria-label={recording ? "Cancel" : "Record hotkey"}
+                    onClick={toggleRecording}
+                  >
+                    {recording ? (
+                      <X className="size-3.5" />
+                    ) : (
+                      <Keyboard className="size-3.5" />
+                    )}
+                  </InputGroupButton>
+                </InputGroupAddon>
+              </InputGroup>
               {invalidOf(shortcutField.state.meta) && (
                 <FieldError errors={shortcutField.state.meta.errors} />
               )}
