@@ -2,18 +2,26 @@ import { Mic } from "lucide-react";
 
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
 
-function IdleHeader() {
+function IdleHeader({ device }: { device?: InputDevice | null }) {
+  const ready = Boolean(device);
+
   return (
     <>
       <div className="flex h-8 items-center gap-2 rounded-lg bg-muted px-3 text-sm">
-        <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+        <span
+          className={
+            ready
+              ? "h-2 w-2 shrink-0 rounded-full bg-emerald-500"
+              : "h-2 w-2 shrink-0 rounded-full bg-destructive"
+          }
+        />
         <span className="text-muted-foreground">Input:</span>
-        <span className="font-mono text-xs text-foreground">
-          MacBook Pro Mic (48kHz)
+        <span className="inline-flex items-center font-mono text-xs leading-none text-foreground">
+          {device?.name ?? "No microphone detected"}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -60,32 +68,11 @@ function IdleBody({ onStart }: { onStart: () => void }) {
   );
 }
 
-function IdleFooter() {
-  return (
-    <div className="flex w-full items-center justify-between rounded-xl bg-muted p-3">
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background text-muted-foreground">
-          <Mic className="size-4" />
-        </div>
-        <div className="flex flex-col text-left">
-          <span className="font-mono text-xs text-muted-foreground">
-            Awaiting voice capture...
-          </span>
-          <span className="text-xs text-muted-foreground/60">
-            Press trigger or begin speaking to buffer audio stream
-          </span>
-        </div>
-      </div>
-      <Badge variant="outline" className="uppercase">
-        VAD STANDBY
-      </Badge>
-    </div>
-  );
-}
-
 export function DictationIdle({ onStart }: { onStart: () => void }) {
+  const { defaultDevice } = useInputDevices();
+
   return (
-    <PageLayout header={<IdleHeader />} footer={<IdleFooter />}>
+    <PageLayout header={<IdleHeader device={defaultDevice} />}>
       <IdleBody onStart={onStart} />
     </PageLayout>
   );

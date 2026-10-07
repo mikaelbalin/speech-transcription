@@ -42,30 +42,72 @@ fn list_input_devices_parec() -> Result<Vec<InputDevice>, String> {
     use std::process::Command;
 
     let out = Command::new("pactl")
-        .args(["list", "short", "sources"])
+        .args(["list", "sources"])
         .output()
         .map_err(|e| format!("Failed to run pactl: {e}"))?;
     let text = String::from_utf8_lossy(&out.stdout);
 
+    let default_source = Command::new("pactl")
+        .args(["get-default-source"])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|s| !s.is_empty());
+
     let mut devices = Vec::new();
+    let mut current_name: Option<String> = None;
+    let mut current_description: Option<String> = None;
+
+    let flush = |name: &Option<String>,
+                 description: &Option<String>,
+                 devices: &mut Vec<InputDevice>,
+                 default_source: &Option<String>| {
+        let Some(name) = name.clone() else { return };
+        // Skip monitor sources (loopback of outputs, not microphones).
+        if name.ends_with(".monitor") {
+            return;
+        }
+        let label = description
+            .clone()
+            .filter(|d| !d.trim().is_empty())
+            .unwrap_or_else(|| name.clone());
+        devices.push(InputDevice {
+            id: name.clone(),
+            name: label,
+            is_default: default_source.as_deref() == Some(name.as_str()),
+        });
+    };
+
     for line in text.lines() {
-        // Format: <index>\t<name>\t<driver>\t<sample_spec>\t<state>
-        let mut cols = line.split('\t');
-        let Some(index) = cols.next() else { continue };
-        let Some(name) = cols.next() else { continue };
-        if name.trim().is_empty() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
             continue;
         }
-        devices.push(InputDevice {
-            id: index.trim().to_string(),
-            name: name.trim().to_string(),
-            is_default: false,
-        });
+        if let Some(rest) = trimmed.strip_prefix("Name:") {
+            flush(
+                &current_name,
+                &current_description,
+                &mut devices,
+                &default_source,
+            );
+            current_name = Some(rest.trim().to_string());
+            current_description = None;
+        } else if let Some(rest) = trimmed.strip_prefix("Description:") {
+            current_description = Some(rest.trim().to_string());
+        }
     }
+    flush(
+        &current_name,
+        &current_description,
+        &mut devices,
+        &default_source,
+    );
 
-    // Best-effort: mark the first source as default.
-    if let Some(first) = devices.first_mut() {
-        first.is_default = true;
+    // Fallback: if no default was matched, mark the first source as default.
+    if !devices.iter().any(|d| d.is_default) {
+        if let Some(first) = devices.first_mut() {
+            first.is_default = true;
+        }
     }
 
     Ok(devices)
