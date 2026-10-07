@@ -40,7 +40,6 @@ function RootLayout() {
         <Link
           to="/settings"
           preload="intent"
-          search={{ tab: "general" }}
           activeProps={{ className: "font-bold" }}
         >
           Settings
