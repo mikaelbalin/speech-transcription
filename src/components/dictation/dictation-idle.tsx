@@ -1,5 +1,6 @@
 import { Mic } from "lucide-react";
 
+import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ function IdleHeader() {
         <Badge variant="secondary" className="h-8 gap-1.5">
           LATENCY ~140ms
         </Badge>
+        <AppHeaderActions showSettings />
       </div>
     </>
   );

@@ -1,11 +1,13 @@
 import { useField, useForm, useSelector } from "@tanstack/react-form";
+import { Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { Check, Eye, EyeOff, Network } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -120,9 +122,12 @@ export function SettingsForm({
               hotkeys.
             </p>
           </div>
-          <Badge variant="secondary" className="font-mono">
-            Config: config.json
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-mono">
+              Config: config.json
+            </Badge>
+            <AppHeaderActions />
+          </div>
         </div>
       }
       footer={
@@ -132,9 +137,9 @@ export function SettingsForm({
             Test WebSocket Ping
           </Button>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost">
+            <Link to="/" className={buttonVariants({ variant: "ghost" })}>
               Cancel
-            </Button>
+            </Link>
             <Button type="submit" form="settings-form" disabled={!canSubmit}>
               <Check className="size-4" />
               {isSubmitting ? "Saving…" : "Save Preferences"}

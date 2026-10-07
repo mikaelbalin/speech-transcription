@@ -1,5 +1,6 @@
 import { Check, Mic, X } from "lucide-react";
 
+import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ function RecordingHeader() {
         <Badge variant="secondary" className="h-8 gap-1.5">
           CONFIDENCE 99.4%
         </Badge>
+        <AppHeaderActions showSettings />
       </div>
     </>
   );

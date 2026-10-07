@@ -1,10 +1,5 @@
-import {
-  createRootRouteWithContext,
-  Link,
-  Outlet,
-} from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { ModeToggle } from "@/components/mode-toggle";
 import type { AppSettings } from "@/components/pages/settings-form";
 
 export interface RouterContext {
@@ -28,24 +23,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   return (
     <main className="flex min-h-dvh flex-col">
-      <nav className="flex items-center gap-3 p-8 pb-0">
-        <Link
-          to="/"
-          preload="intent"
-          activeProps={{ className: "font-bold" }}
-          activeOptions={{ exact: true }}
-        >
-          Dictation
-        </Link>
-        <Link
-          to="/settings"
-          preload="intent"
-          activeProps={{ className: "font-bold" }}
-        >
-          Settings
-        </Link>
-        <ModeToggle />
-      </nav>
       <div className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </div>

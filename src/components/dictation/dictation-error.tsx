@@ -1,4 +1,5 @@
 import { ArrowLeft, MicOff, RefreshCw } from "lucide-react";
+import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import type { DictationErrorInfo } from "@/components/pages/dictation";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +17,12 @@ function ErrorHeader({ error }: { error: DictationErrorInfo }) {
           <span className="text-base font-semibold">
             Microphone Capture Permitted Failed
           </span>
-          <Badge variant="destructive" className="font-mono">
-            {error.code}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="destructive" className="font-mono">
+              {error.code}
+            </Badge>
+            <AppHeaderActions showSettings />
+          </div>
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground">
           {error.message}
