@@ -33,7 +33,7 @@ function IdleBody({ onStart }: { onStart: () => void }) {
         onClick={onStart}
         variant="ghost"
         size="icon"
-        className="h-28 w-28 rounded-full border-0 bg-linear-to-b from-secondary to-muted shadow-[0_0_40px_rgba(125,244,255,0.35),inset_0_1px_1px_rgba(255,255,255,0.15)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_70px_rgba(125,244,255,0.55),inset_0_1px_1px_rgba(255,255,255,0.15)] active:scale-95"
+        className="h-28 w-28 rounded-full border-0 bg-linear-to-b from-secondary to-muted animate-pulse-glow transition-transform duration-300 hover:scale-105 hover:animate-pulse-glow-strong active:scale-95"
         aria-label="Start dictation"
       >
         <span className="flex flex-col items-center justify-center gap-0.5">
