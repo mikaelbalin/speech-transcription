@@ -29,6 +29,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::settings::get_settings,
             commands::settings::set_settings,
+            commands::settings::get_models,
             commands::audio::get_devices,
             commands::transcription::start_transcription,
             commands::transcription::stop_transcription,

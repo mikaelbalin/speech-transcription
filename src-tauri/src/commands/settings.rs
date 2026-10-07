@@ -1,12 +1,18 @@
 use tauri::AppHandle;
 
-use crate::settings::{self, AppSettings};
+use crate::settings::{self, AppSettings, ModelInfo};
 use crate::shortcut;
 
 /// Returns the current application settings (with defaults for missing keys).
 #[tauri::command]
 pub fn get_settings(app: AppHandle) -> AppSettings {
     settings::get_settings(&app)
+}
+
+/// Returns the list of realtime transcription models available for selection.
+#[tauri::command]
+pub fn get_models() -> Vec<ModelInfo> {
+    settings::list_models()
 }
 
 /// Persists the application settings.

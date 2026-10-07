@@ -10,6 +10,25 @@ const DEFAULT_BASE_URL: &str = "wss://api.mistral.ai";
 const DEFAULT_SAMPLE_RATE: u32 = 16000;
 const DEFAULT_SHORTCUT: &str = "ctrl+alt+space";
 
+/// A selectable realtime transcription model.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelInfo {
+    /// Model id used in the realtime endpoint's `model` query parameter.
+    pub id: String,
+    /// Human-readable display label.
+    pub label: String,
+}
+
+/// Returns the list of realtime transcription models available for selection.
+/// Kept as a static list for now; extend here when Mistral adds more models.
+pub fn list_models() -> Vec<ModelInfo> {
+    vec![ModelInfo {
+        id: DEFAULT_MODEL.to_string(),
+        label: "Voxtral Mini Transcribe Realtime (Recommended)".to_string(),
+    }]
+}
+
 /// Application settings persisted via the Tauri store plugin.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

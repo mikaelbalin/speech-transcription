@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { shortcutParts } from "@/lib/shortcut";
-import { useInputDevices } from "@/lib/use-input-devices";
+import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
+import { type ModelInfo, useModels } from "@/lib/use-models";
 import { useShortcutRecorder } from "@/lib/use-shortcut-recorder";
 
 // Shared shape with the Rust `AppSettings` (serde camelCase).
@@ -54,25 +55,29 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const MODELS = [
-  "mistral-realtime-voice-v1 (Recommended)",
-  "mistral-embed-speech (Low latency)",
-  "whisper-large-v3-turbo (Local fallback)",
-];
-
 export function SettingsForm({
   initialSettings,
+  models: modelsOverride,
+  devices: devicesOverride,
 }: {
   initialSettings?: AppSettings | null;
+  /** Override the device list (used by Storybook to mock Tauri data). */
+  devices?: InputDevice[];
+  /** Override the model list (used by Storybook to mock Tauri data). */
+  models?: ModelInfo[];
 }) {
   const [showKey, setShowKey] = useState(false);
-  const { devices } = useInputDevices();
+  const { devices: fetchedDevices } = useInputDevices();
+  const { models: fetchedModels } = useModels();
   const navigate = useNavigate();
+
+  const devices = devicesOverride ?? fetchedDevices;
+  const models = modelsOverride ?? fetchedModels;
 
   const form = useForm({
     defaultValues: {
       apiKey: initialSettings?.apiKey ?? "",
-      model: initialSettings?.model ?? "mistral-realtime-voice-v1",
+      model: initialSettings?.model ?? "voxtral-mini-transcribe-realtime-2602",
       baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
       shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
       inputDeviceId: initialSettings?.inputDeviceId ?? "",
@@ -204,9 +209,18 @@ export function SettingsForm({
                 Realtime Speech Model
               </FieldLabel>
               <Combobox
-                value={modelField.state.value}
+                value={
+                  models.find((m) => m.id === modelField.state.value)
+                    ? {
+                        value: modelField.state.value,
+                        label:
+                          models.find((m) => m.id === modelField.state.value)
+                            ?.label ?? "",
+                      }
+                    : null
+                }
                 onValueChange={(value) => {
-                  if (value) modelField.handleChange(value);
+                  if (value) modelField.handleChange(value.value);
                 }}
               >
                 <ComboboxInput
@@ -216,9 +230,12 @@ export function SettingsForm({
                 />
                 <ComboboxContent>
                   <ComboboxList>
-                    {MODELS.map((model) => (
-                      <ComboboxItem key={model} value={model}>
-                        {model}
+                    {models.map((model) => (
+                      <ComboboxItem
+                        key={model.id}
+                        value={{ value: model.id, label: model.label }}
+                      >
+                        {model.label}
                       </ComboboxItem>
                     ))}
                   </ComboboxList>
