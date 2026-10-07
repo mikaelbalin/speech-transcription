@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DictationIdle } from "./dictation-idle";
 
 const meta: Meta<typeof DictationIdle> = {
-  title: "Pages/Dictation/DictationIdle",
+  title: "Dictation/DictationIdle",
   component: DictationIdle,
   parameters: {
     layout: "centered",

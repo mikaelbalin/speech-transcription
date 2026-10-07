@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
-import { DictationError } from "@/components/pages/dictation-error";
-import { DictationIdle } from "@/components/pages/dictation-idle";
-import { DictationRecording } from "@/components/pages/dictation-recording";
+import { DictationError } from "@/components/dictation/dictation-error";
+import { DictationIdle } from "@/components/dictation/dictation-idle";
+import { DictationRecording } from "@/components/dictation/dictation-recording";
 
 export type DictationErrorInfo = {
   code: string;

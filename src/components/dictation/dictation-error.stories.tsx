@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DictationError } from "./dictation-error";
 
 const meta: Meta<typeof DictationError> = {
-  title: "Pages/Dictation/DictationError",
+  title: "Dictation/DictationError",
   component: DictationError,
   parameters: {
     layout: "centered",

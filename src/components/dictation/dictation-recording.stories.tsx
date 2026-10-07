@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DictationRecording } from "./dictation-recording";
 
 const meta: Meta<typeof DictationRecording> = {
-  title: "Pages/Dictation/DictationRecording",
+  title: "Dictation/DictationRecording",
   component: DictationRecording,
   parameters: {
     layout: "centered",
