@@ -4,6 +4,7 @@ import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 
 function IdleHeader() {
   return (
@@ -16,12 +17,6 @@ function IdleHeader() {
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="h-8 uppercase">
-          Mistral AI • Large-v3
-        </Badge>
-        <Badge variant="secondary" className="h-8 gap-1.5">
-          LATENCY ~140ms
-        </Badge>
         <AppHeaderActions showSettings />
       </div>
     </>
@@ -56,13 +51,9 @@ function IdleBody({ onStart }: { onStart: () => void }) {
       <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm">
         <span className="text-muted-foreground">Global trigger:</span>
         <span className="flex items-center gap-1 font-mono text-xs">
-          <kbd className="rounded bg-accent px-2 py-0.5 text-foreground">
-            Option
-          </kbd>
+          <Kbd className="bg-background text-foreground">Option</Kbd>
           <span className="text-muted-foreground">+</span>
-          <kbd className="rounded bg-accent px-2 py-0.5 text-foreground">
-            Space
-          </kbd>
+          <Kbd className="bg-background text-foreground">Space</Kbd>
         </span>
       </div>
     </div>
