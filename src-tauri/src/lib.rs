@@ -23,6 +23,7 @@ pub fn run() {
             let settings = settings::get_settings(app.handle());
             let _ = shortcut::register(app.handle(), &settings.shortcut);
             overlay::create_overlay(app.handle());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
