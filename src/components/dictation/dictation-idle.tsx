@@ -4,7 +4,9 @@ import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import { shortcutParts } from "@/lib/shortcut";
 import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
+import { useShortcut } from "@/lib/use-shortcut";
 
 function IdleHeader({ device }: { device?: InputDevice | null }) {
   const ready = Boolean(device);
@@ -32,6 +34,9 @@ function IdleHeader({ device }: { device?: InputDevice | null }) {
 }
 
 function IdleBody({ onStart }: { onStart: () => void }) {
+  const { shortcut } = useShortcut();
+  const parts = shortcutParts(shortcut);
+
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
       <Button
@@ -58,11 +63,20 @@ function IdleBody({ onStart }: { onStart: () => void }) {
       </div>
       <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm">
         <span className="text-muted-foreground">Global trigger:</span>
-        <span className="flex items-center gap-1 font-mono text-xs">
-          <Kbd className="bg-background text-foreground">Option</Kbd>
-          <span className="text-muted-foreground">+</span>
-          <Kbd className="bg-background text-foreground">Space</Kbd>
-        </span>
+        {parts.length ? (
+          <span className="flex items-center gap-1 font-mono text-xs">
+            {parts.map(({ key, node }, i) => (
+              <span key={key} className="flex items-center gap-1">
+                {i > 0 && <span className="text-muted-foreground">+</span>}
+                <Kbd className="bg-background text-foreground">{node}</Kbd>
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span className="font-mono text-xs text-muted-foreground">
+            Not set
+          </span>
+        )}
       </div>
     </div>
   );
