@@ -16,12 +16,23 @@ pub struct CpalRecorder {
 }
 
 impl CpalRecorder {
-    /// Starts capture from the default input device.
-    pub fn start(sample_rate: u32) -> Result<Self, String> {
+    /// Starts capture from the selected (or default) input device.
+    ///
+    /// `device_id` is the 0-based index of the device in `input_devices()`, as
+    /// reported by `list_input_devices_cpal`. Empty/unknown = default device.
+    pub fn start(sample_rate: u32, device_id: &str) -> Result<Self, String> {
         let host = cpal::default_host();
-        let device = host
-            .default_input_device()
-            .ok_or_else(|| "No default input device".to_string())?;
+
+        let device = match device_id.parse::<usize>() {
+            Ok(idx) => host
+                .input_devices()
+                .ok()
+                .and_then(|mut list| list.nth(idx))
+                .unwrap_or_else(|| host.default_input_device().unwrap()),
+            Err(_) => host
+                .default_input_device()
+                .ok_or_else(|| "No default input device".to_string())?,
+        };
 
         let config = device
             .default_input_config()

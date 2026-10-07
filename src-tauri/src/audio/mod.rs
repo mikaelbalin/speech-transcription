@@ -37,6 +37,12 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
     }
 }
 
+/// Starts capture. `device_id` selects a specific input device; empty means
+/// the system default.
+pub fn start_recorder(sample_rate: u32, device_id: &str) -> Result<Recorder, String> {
+    Recorder::start(sample_rate, device_id)
+}
+
 #[cfg(target_os = "linux")]
 fn list_input_devices_parec() -> Result<Vec<InputDevice>, String> {
     use std::process::Command;

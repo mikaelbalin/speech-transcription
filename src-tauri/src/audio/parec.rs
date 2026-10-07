@@ -18,14 +18,21 @@ pub struct ParecRecorder {
 
 impl ParecRecorder {
     /// Spawns `parec` and returns a recorder reading from its stdout.
-    pub fn start(sample_rate: u32) -> Result<Self, String> {
-        let child = Command::new("parec")
-            .args([
-                "--format=s16le",
-                &format!("--rate={sample_rate}"),
-                "--channels=1",
-                "--latency-msec=100",
-            ])
+    ///
+    /// `device_id` selects a specific source (PulseAudio source name); empty
+    /// means the default source.
+    pub fn start(sample_rate: u32, device_id: &str) -> Result<Self, String> {
+        let mut cmd = Command::new("parec");
+        cmd.args([
+            "--format=s16le",
+            &format!("--rate={sample_rate}"),
+            "--channels=1",
+            "--latency-msec=100",
+        ]);
+        if !device_id.is_empty() {
+            cmd.arg(format!("--device={device_id}"));
+        }
+        let child = cmd
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

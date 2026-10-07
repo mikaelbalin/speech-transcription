@@ -69,10 +69,10 @@ function IdleBody({ onStart }: { onStart: () => void }) {
 }
 
 export function DictationIdle({ onStart }: { onStart: () => void }) {
-  const { defaultDevice } = useInputDevices();
+  const { selectedDevice } = useInputDevices();
 
   return (
-    <PageLayout header={<IdleHeader device={defaultDevice} />}>
+    <PageLayout header={<IdleHeader device={selectedDevice} />}>
       <IdleBody onStart={onStart} />
     </PageLayout>
   );

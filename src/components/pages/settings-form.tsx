@@ -1,7 +1,7 @@
 import { useField, useForm, useSelector } from "@tanstack/react-form";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { Check, Eye, EyeOff, Keyboard, Network, X } from "lucide-react";
+import { Eye, EyeOff, Keyboard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { shortcutParts } from "@/lib/shortcut";
+import { useInputDevices } from "@/lib/use-input-devices";
 import { useShortcutRecorder } from "@/lib/use-shortcut-recorder";
 
 // Shared shape with the Rust `AppSettings` (serde camelCase).
@@ -40,6 +41,7 @@ export interface AppSettings {
   targetDelayMs: number | null;
   shortcut: string;
   baseUrl: string;
+  inputDeviceId: string;
 }
 
 const formSchema = z.object({
@@ -47,6 +49,7 @@ const formSchema = z.object({
   model: z.string().min(1, "Model is required."),
   baseUrl: z.url("Must be a valid URL."),
   shortcut: z.string().min(1, "Shortcut is required."),
+  inputDeviceId: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -57,18 +60,14 @@ const MODELS = [
   "whisper-large-v3-turbo (Local fallback)",
 ];
 
-const AUDIO_DEVICES = [
-  "MacBook Pro Microphone (Built-in Audio) • 48000Hz 1ch",
-  "Shure MV7 USB Dynamic Mic (External) • 44100Hz 1ch",
-  "Elgato Wave:3 (Virtual Stream Mixer) • 48000Hz 2ch",
-];
-
 export function SettingsForm({
   initialSettings,
 }: {
   initialSettings?: AppSettings | null;
 }) {
   const [showKey, setShowKey] = useState(false);
+  const { devices } = useInputDevices();
+  const navigate = useNavigate();
 
   const form = useForm({
     defaultValues: {
@@ -76,6 +75,7 @@ export function SettingsForm({
       model: initialSettings?.model ?? "mistral-realtime-voice-v1",
       baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
       shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
+      inputDeviceId: initialSettings?.inputDeviceId ?? "",
     } as FormValues,
     validators: {
       onChange: formSchema,
@@ -88,8 +88,10 @@ export function SettingsForm({
         shortcut: value.shortcut,
         sampleRate: 16000,
         targetDelayMs: null,
+        inputDeviceId: value.inputDeviceId,
       };
       await invoke("set_settings", { settings });
+      navigate({ to: "/" });
     },
   });
 
@@ -97,6 +99,7 @@ export function SettingsForm({
   const modelField = useField({ form, name: "model" });
   const baseUrlField = useField({ form, name: "baseUrl" });
   const shortcutField = useField({ form, name: "shortcut" });
+  const inputDeviceIdField = useField({ form, name: "inputDeviceId" });
 
   const { recording, toggleRecording } = useShortcutRecorder((shortcut) => {
     shortcutField.handleChange(shortcut);
@@ -111,6 +114,7 @@ export function SettingsForm({
     form.setFieldValue("model", initialSettings.model);
     form.setFieldValue("baseUrl", initialSettings.baseUrl);
     form.setFieldValue("shortcut", initialSettings.shortcut);
+    form.setFieldValue("inputDeviceId", initialSettings.inputDeviceId ?? "");
   }, [form, initialSettings]);
 
   const invalidOf = (meta: { isTouched: boolean; isValid: boolean }) =>
@@ -138,21 +142,14 @@ export function SettingsForm({
         </div>
       }
       footer={
-        <>
-          <Button type="button" variant="outline">
-            <Network className="size-4" />
-            Test WebSocket Ping
+        <div className="flex items-center ml-auto gap-2">
+          <Link to="/" className={buttonVariants({ variant: "ghost" })}>
+            Cancel
+          </Link>
+          <Button type="submit" form="settings-form" disabled={!canSubmit}>
+            {isSubmitting ? "Saving…" : "Save Preferences"}
           </Button>
-          <div className="flex items-center gap-2">
-            <Link to="/" className={buttonVariants({ variant: "ghost" })}>
-              Cancel
-            </Link>
-            <Button type="submit" form="settings-form" disabled={!canSubmit}>
-              <Check className="size-4" />
-              {isSubmitting ? "Saving…" : "Save Preferences"}
-            </Button>
-          </div>
-        </>
+        </div>
       }
     >
       <form
@@ -309,14 +306,40 @@ export function SettingsForm({
 
           {/* Row 3: Audio Device */}
           <Field>
-            <FieldLabel>Audio Input Capture Device</FieldLabel>
-            <Combobox defaultValue={AUDIO_DEVICES[0]}>
-              <ComboboxInput showClear={false} placeholder="Select a device" />
+            <FieldLabel htmlFor="settings-input-device">
+              Audio Input Capture Device
+            </FieldLabel>
+            <Combobox
+              value={
+                devices.find((d) => d.id === inputDeviceIdField.state.value)
+                  ? {
+                      value: inputDeviceIdField.state.value,
+                      label:
+                        devices.find(
+                          (d) => d.id === inputDeviceIdField.state.value,
+                        )?.name ?? "",
+                    }
+                  : null
+              }
+              onValueChange={(value) => {
+                if (value) inputDeviceIdField.handleChange(value.value);
+              }}
+            >
+              <ComboboxInput
+                id="settings-input-device"
+                showClear={false}
+                placeholder={
+                  devices.length ? "Select a device" : "No microphones detected"
+                }
+              />
               <ComboboxContent>
                 <ComboboxList>
-                  {AUDIO_DEVICES.map((device) => (
-                    <ComboboxItem key={device} value={device}>
-                      {device}
+                  {devices.map((device) => (
+                    <ComboboxItem
+                      key={device.id}
+                      value={{ value: device.id, label: device.name }}
+                    >
+                      {device.name}
                     </ComboboxItem>
                   ))}
                 </ComboboxList>

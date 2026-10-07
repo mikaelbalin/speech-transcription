@@ -55,7 +55,8 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
 
     crate::overlay::show_overlay(app);
 
-    let mut recorder = crate::audio::Recorder::start(settings.sample_rate)?;
+    let mut recorder =
+        crate::audio::start_recorder(settings.sample_rate, &settings.input_device_id)?;
 
     let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
 

@@ -26,6 +26,7 @@ export const Prefilled: Story = {
       targetDelayMs: null,
       shortcut: "ctrl+alt+space",
       baseUrl: "wss://api.mistral.ai",
+      inputDeviceId: "",
     } satisfies AppSettings,
   },
 };

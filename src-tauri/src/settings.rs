@@ -26,6 +26,8 @@ pub struct AppSettings {
     pub shortcut: String,
     /// Base WebSocket URL of the Mistral API.
     pub base_url: String,
+    /// Selected input (microphone) device id. Empty = system default.
+    pub input_device_id: String,
 }
 
 impl Default for AppSettings {
@@ -37,6 +39,7 @@ impl Default for AppSettings {
             target_delay_ms: None,
             shortcut: DEFAULT_SHORTCUT.to_string(),
             base_url: DEFAULT_BASE_URL.to_string(),
+            input_device_id: String::new(),
         }
     }
 }
@@ -69,6 +72,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
             .map(|v| v as u32),
         shortcut: get_str("shortcut", DEFAULT_SHORTCUT),
         base_url: get_str("base_url", DEFAULT_BASE_URL),
+        input_device_id: get_str("input_device_id", ""),
     }
 }
 
@@ -88,6 +92,7 @@ pub fn set_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), Strin
     }
     store.set("shortcut", settings.shortcut.clone());
     store.set("base_url", settings.base_url.clone());
+    store.set("input_device_id", settings.input_device_id.clone());
 
     Ok(())
 }
