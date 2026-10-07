@@ -4,7 +4,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
+import { ModeToggle } from "@/components/mode-toggle";
 import type { AppSettings } from "@/components/SettingsForm";
 
 export interface RouterContext {
@@ -45,6 +45,7 @@ function RootLayout() {
         >
           Settings
         </Link>
+        <ModeToggle />
       </nav>
       <Outlet />
       <TanStackRouterDevtools />
