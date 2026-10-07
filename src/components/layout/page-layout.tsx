@@ -12,7 +12,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex shrink-0 items-center justify-between gap-2 px-8",
+        "flex shrink-0 items-center justify-between gap-2",
         className,
       )}
       {...props}
@@ -24,10 +24,6 @@ export function PageHeader({
  * Middle section of the page layout. This is the flexible region: it grows to
  * fill available space so the footer stays pinned to the bottom of the screen
  * regardless of how tall the content is.
- *
- * The content inside the body is kept to a centered, readable column
- * (`max-w-md mx-auto w-full`), while the header and footer above/below span
- * the full width of the screen.
  */
 export function PageBody({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
@@ -46,7 +42,7 @@ export function PageFooter({
   return (
     <footer
       className={cn(
-        "flex shrink-0 items-center justify-between gap-2 px-8",
+        "flex shrink-0 items-center justify-between gap-2",
         className,
       )}
       {...props}
@@ -78,12 +74,15 @@ export function PageLayout({
 } & HTMLAttributes<HTMLElement>) {
   return (
     <div
-      className={cn("flex h-full w-full flex-1 flex-col gap-4", className)}
+      className={cn(
+        "flex h-full w-full flex-1 flex-col gap-4 px-8 py-6",
+        className,
+      )}
       {...props}
     >
       {header ? <PageHeader>{header}</PageHeader> : null}
       <PageBody>
-        <div className="mx-auto flex w-full flex-1 flex-col justify-center">
+        <div className="flex w-full flex-1 flex-col justify-center">
           {children}
         </div>
       </PageBody>
