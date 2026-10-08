@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "build:appimage": "NO_STRIP=1 tauri build --bundles appimage",
     "lint": "pnpx @biomejs/biome check --write",
     "storybook": "storybook dev -p 6006 --no-open",
     "build:storybook": "storybook build"

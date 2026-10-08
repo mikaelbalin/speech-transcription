@@ -47,6 +47,9 @@ pub struct AppSettings {
     pub base_url: String,
     /// Selected input (microphone) device id. Empty = system default.
     pub input_device_id: String,
+    /// Whether first-run host setup (udev rule + input group) is considered
+    /// done — either applied, or explicitly skipped by the user.
+    pub setup_completed: bool,
 }
 
 impl Default for AppSettings {
@@ -59,6 +62,7 @@ impl Default for AppSettings {
             shortcut: DEFAULT_SHORTCUT.to_string(),
             base_url: DEFAULT_BASE_URL.to_string(),
             input_device_id: String::new(),
+            setup_completed: false,
         }
     }
 }
@@ -92,6 +96,9 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         shortcut: get_str("shortcut", DEFAULT_SHORTCUT),
         base_url: get_str("base_url", DEFAULT_BASE_URL),
         input_device_id: get_str("input_device_id", ""),
+        setup_completed: read("setup_completed")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
     }
 }
 
@@ -112,6 +119,7 @@ pub fn set_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), Strin
     store.set("shortcut", settings.shortcut.clone());
     store.set("base_url", settings.base_url.clone());
     store.set("input_device_id", settings.input_device_id.clone());
+    store.set("setup_completed", settings.setup_completed);
 
     Ok(())
 }

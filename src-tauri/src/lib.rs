@@ -5,6 +5,8 @@ mod mistral;
 mod overlay;
 mod paste;
 mod settings;
+#[cfg(target_os = "linux")]
+mod setup;
 mod shortcut;
 
 use std::sync::Arc;
@@ -30,6 +32,13 @@ pub fn run() {
             commands::settings::get_settings,
             commands::settings::set_settings,
             commands::settings::get_models,
+            commands::settings::mark_setup_complete,
+            #[cfg(target_os = "linux")]
+            commands::setup::check_setup_status,
+            #[cfg(target_os = "linux")]
+            commands::setup::run_setup,
+            #[cfg(target_os = "linux")]
+            commands::setup::revert_setup,
             commands::audio::get_devices,
             commands::transcription::start_transcription,
             commands::transcription::stop_transcription,

@@ -43,6 +43,7 @@ export interface AppSettings {
   shortcut: string;
   baseUrl: string;
   inputDeviceId: string;
+  setupCompleted: boolean;
 }
 
 const formSchema = z.object({
@@ -94,6 +95,7 @@ export function SettingsForm({
         sampleRate: 16000,
         targetDelayMs: null,
         inputDeviceId: value.inputDeviceId,
+        setupCompleted: initialSettings?.setupCompleted ?? false,
       };
       await invoke("set_settings", { settings });
       navigate({ to: "/" });
@@ -142,7 +144,7 @@ export function SettingsForm({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <AppHeaderActions />
+            <AppHeaderActions showOnboarding />
           </div>
         </div>
       }

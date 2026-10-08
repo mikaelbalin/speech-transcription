@@ -159,16 +159,15 @@ Wayland ради безопасности, а не ограничение наш
 
 - [ ] Упаковка + установщик
 
-  - Основное приложение — **Flatpak** (нативный для Bazzite/KDE).
-  - Linux: `.deb` / `.rpm` / AppImage с `postinst`, который ставит udev-правило
-    (`KERNEL=="uinput", MODE="0660", GROUP="input"`) и добавляет пользователя в группу
-    `input`; `postrm` убирает их при удалении.
-  - Это делает автопаст через uinput рабочим «из коробки» без ручной настройки.
+  - Основной формат для проверки — **AppImage** (самодостаточный файл, без установки).
+  - Настройка автопаста (udev-правило + группа `input`) выполняется **из приложения**
+    при первом запуске через `pkexec` (экран `Onboarding`), а не через
+    `postinst`/`postrm` (у AppImage нет шага установки).
 
-  **Статус:** пока НЕ реализовано. В `tauri.conf.json` секция `bundle` — базовая
-  (targets `all`), Flatpak/`.deb`/`.rpm`/AppImage-манифестов и `postinst`/`postrm`
-  в репозитории нет. Единственные обходные скрипты — dev-скрипты в `scripts/`
-  (см. «Разработка»), но это не инсталляторные хуки.
+  **Статус:** частично реализовано. AppImage-таргет настроен (`targets: ["appimage"]`),
+  onboarding-экран + команды `check_setup_status` / `run_setup` / `revert_setup`
+  готовы (`src-tauri/src/setup.rs`, `src/components/pages/onboarding.tsx`).
+  `.deb`/`.rpm` с `postinst`/`postrm` для авто-отката на native-системах — не сделано.
 
   **Checkpoint:** чистая установка на свежую систему → автопаст работает; удаление
   откатывает udev-правило и членство в группе.
@@ -298,6 +297,48 @@ udev-правила, привязывающего наше устройство 
 sudo scripts/dev-udev-enable.sh   # поставить правило + перезагрузить udev
 sudo scripts/dev-udev-disable.sh  # убрать правило + перезагрузить udev (откат)
 ```
+
+## Сборка AppImage
+
+```bash
+pnpm build:appimage  # NO_STRIP=1 tauri build --bundles appimage
+```
+
+Результат — один самодостаточный файл в
+`src-tauri/target/release/bundle/appimage/`. Для запуска достаточно сделать его
+исполняемым; удаление — просто удалить файл. Никакой установки в систему нет.
+
+**Замечания по сборке:**
+- `NO_STRIP=1` обязателен на Fedora/Bazzite: системные библиотеки собраны с
+  RELR-релокациями (`.relr.dyn`), а встроенный в linuxdeploy `strip` их не
+  понимает и падает с `failed to run linuxdeploy`.
+- `bundleMediaFramework` **выключен** — приложение не использует GStreamer
+  (аудио идёт через `parec`/`cpal` и WebSocket), а gstreamer-плагин linuxdeploy
+  требует `patchelf`.
+
+Зависимость рантайма: `gtk-layer-shell` (`libgtk-layer-shell.so.0`) должна быть
+доступна в системе (на Bazzite/Fedora — пакет `gtk-layer-shell`).
+
+## Onboarding: настройка автопаста из приложения
+
+При первом запуске показывается экран `Onboarding`, который объясняет, зачем нужна
+настройка хоста, и кнопкой запускает установку udev-правила и добавление пользователя
+в группу `input` через **`pkexec`** (PolicyKit) — открывается нативный диалог ввода
+пароля. Реализация:
+
+- Rust: `src-tauri/src/setup.rs` (проверка статуса + helper-скрипт + запуск через
+  `pkexec`), команды `check_setup_status` / `run_setup` / `revert_setup`
+  (`src-tauri/src/commands/setup.rs`).
+- Флаг «настройка выполнена/пропущена» хранится в `settings` (`setup_completed`),
+  команда `mark_setup_complete` помечает его. Маршрут `/` редиректит на
+  `/onboarding`, пока флаг не выставлен.
+- Frontend: `src/components/pages/onboarding.tsx` + `src/routes/onboarding.tsx`.
+
+**Почему pkexec, а не автоматика при «установке».** AppImage не имеет шага установки
+(и `postinst`/`postrm`), поэтому нет хука, который мог бы поставить/откатить
+udev-правило. Вместо этого приложение само запрашивает права у пользователя в момент
+первого запуска. Это работает и без отдельного polkit-правила: `pkexec` по умолчанию
+использует действие `org.freedesktop.policykit.exec` с аутентификацией администратора.
 
 ## Линт / форматирование
 
