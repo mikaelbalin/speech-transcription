@@ -41,6 +41,12 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-glow: var(--glow);
+  --color-glow-soft: var(--glow-soft);
+  --color-button-from: var(--button-from);
+  --color-button-to: var(--button-to);
+  --color-button-icon: var(--button-icon);
+  --color-button-label: var(--button-label);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -55,29 +61,25 @@
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow:
-      0 0 30px rgba(125, 244, 255, 0.3),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 30px var(--glow-soft);
   }
   50% {
-    box-shadow:
-      0 0 60px rgba(125, 244, 255, 0.55),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 60px var(--glow);
   }
 }
 
 @keyframes pulse-glow-strong {
   0%,
   100% {
-    box-shadow:
-      0 0 60px rgba(125, 244, 255, 0.45),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 60px var(--glow);
   }
   50% {
-    box-shadow:
-      0 0 100px rgba(125, 244, 255, 0.7),
-      inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 100px var(--glow);
   }
+}
+
+@utility shadow-button {
+  box-shadow: var(--button-shadow);
 }
 
 :root {
@@ -113,6 +115,15 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --glow: rgba(56, 189, 248, 0.55);
+  --glow-soft: rgba(56, 189, 248, 0.3);
+  --button-from: #ffffff;
+  --button-to: #f1f5f9;
+  --button-icon: #0284c7;
+  --button-label: #0369a1;
+  --button-shadow:
+    0 12px 32px rgba(2, 132, 199, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
@@ -147,6 +158,15 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --glow: rgba(125, 244, 255, 0.7);
+  --glow-soft: rgba(125, 244, 255, 0.45);
+  --button-from: #292a2f;
+  --button-to: #1e1f25;
+  --button-icon: #7df4ff;
+  --button-label: #7df4ff;
+  --button-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
 @layer base {

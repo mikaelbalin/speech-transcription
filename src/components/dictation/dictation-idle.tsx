@@ -41,20 +41,23 @@ function IdleBody({ onStart }: { onStart: () => void }) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
-      <Button
-        onClick={onStart}
-        variant="ghost"
-        size="icon"
-        className="h-28 w-28 rounded-full border-0 bg-linear-to-b from-secondary to-muted animate-pulse-glow transition-transform duration-300 hover:scale-105 hover:animate-pulse-glow-strong active:scale-95"
-        aria-label="Start dictation"
-      >
-        <span className="flex flex-col items-center justify-center gap-0.5">
-          <Mic className="size-9 text-primary" />
-          <span className="font-mono text-xs font-bold tracking-wider text-primary">
-            READY
+      <div className="group relative cursor-pointer">
+        <div className="absolute -inset-3 rounded-full bg-glow-soft/40 blur-xl transition-all animate-pulse group-hover:bg-glow-soft/70" />
+        <Button
+          onClick={onStart}
+          variant="ghost"
+          size="icon"
+          className="relative h-28 w-28 rounded-full border-0 bg-linear-to-b from-button-from to-button-to shadow-button transition-transform duration-300 hover:scale-105 active:scale-95"
+          aria-label="Start dictation"
+        >
+          <span className="flex flex-col items-center justify-center gap-0.5">
+            <Mic className="mb-0.5 size-9 text-button-icon" />
+            <span className="font-mono text-xs font-bold tracking-wider text-button-label">
+              READY
+            </span>
           </span>
-        </span>
-      </Button>
+        </Button>
+      </div>
 
       <div className="flex flex-col items-center gap-1">
         <h2 className="text-lg font-medium tracking-tight">Press to Dictate</h2>
