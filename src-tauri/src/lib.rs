@@ -1,5 +1,7 @@
 mod audio;
 mod commands;
+#[cfg(target_os = "linux")]
+mod keyboard_listener;
 mod managers;
 mod mistral;
 mod overlay;

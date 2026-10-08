@@ -13,13 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  */
 export type SetupStatus = {
   ruleInstalled: boolean;
-  inInputGroup: boolean;
+  uinputWritable: boolean;
   uinputAvailable: boolean;
 };
 
 const UNKNOWN: SetupStatus = {
   ruleInstalled: false,
-  inInputGroup: false,
+  uinputWritable: false,
   uinputAvailable: false,
 };
 
@@ -75,7 +75,7 @@ export function Onboarding() {
     }
   }, []);
 
-  const complete = status?.ruleInstalled && status?.inInputGroup;
+  const complete = status?.ruleInstalled && status?.uinputWritable;
 
   return (
     <PageLayout
@@ -143,8 +143,8 @@ export function Onboarding() {
               done={status?.ruleInstalled ?? false}
             />
             <StatusRow
-              label="Your user in the `input` group"
-              done={status?.inInputGroup ?? false}
+              label="Write access to /dev/uinput"
+              done={status?.uinputWritable ?? false}
             />
 
             {error && (

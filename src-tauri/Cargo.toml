@@ -38,6 +38,7 @@ cpal = "0.15"
 libc = "0.2"
 gtk = "0.18"
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+evdev = "0.13"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

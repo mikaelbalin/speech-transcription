@@ -47,7 +47,7 @@ pub struct AppSettings {
     pub base_url: String,
     /// Selected input (microphone) device id. Empty = system default.
     pub input_device_id: String,
-    /// Whether first-run host setup (udev rule + input group) is considered
+    /// Whether first-run host setup (udev rule + uinput access) is considered
     /// done — either applied, or explicitly skipped by the user.
     pub setup_completed: bool,
 }

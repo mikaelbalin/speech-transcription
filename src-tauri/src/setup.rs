@@ -4,15 +4,18 @@
 //! The only universal workaround is `uinput` — a kernel-level virtual input
 //! device. Two things are required for it to work:
 //!
-//!   1. Write access to `/dev/uinput` (root, or membership in the `input` group).
+//!   1. Write access to `/dev/uinput`. On modern systemd desktops this is granted
+//!      to the active session user via the `uaccess` mechanism (an ACL from
+//!      systemd-logind), so no group membership is required.
 //!   2. A udev rule assigning our virtual keyboard to `seat0`, otherwise
 //!      libinput/KWin ignores it (uinput devices have no physical path, so udev
 //!      cannot derive `ID_SEAT`).
 //!
-//! Both need root, so they are applied by a helper script run through `pkexec`
-//! (PolicyKit), which shows the user a native password prompt. This mirrors the
-//! dev scripts `scripts/dev-udev-enable.sh` / `dev-udev-disable.sh`, but is
-//! driven from the app's first-run onboarding screen rather than the terminal.
+//! The udev rule needs root, so it is applied by a helper script run through
+//! `pkexec` (PolicyKit), which shows the user a native password prompt. This
+//! mirrors the dev scripts `scripts/dev-udev-enable.sh` / `dev-udev-disable.sh`,
+//! but is driven from the app's first-run onboarding screen rather than the
+//! terminal.
 
 use std::process::Command;
 
@@ -26,17 +29,20 @@ fn rule_installed() -> bool {
         .exists()
 }
 
-/// Whether the current user belongs to the `input` group.
-fn in_input_group() -> bool {
-    // `id -nG` lists the current user's supplementary group names.
-    let Ok(output) = Command::new("id").arg("-nG").output() else {
-        return false;
-    };
-    if !output.status.success() {
-        return false;
-    }
-    let names = String::from_utf8_lossy(&output.stdout);
-    names.split_whitespace().any(|g| g == "input")
+/// Whether the current process can open `/dev/uinput` for writing.
+///
+/// This is the actual requirement for auto-paste: the app must be able to
+/// create a uinput device. We test it directly rather than checking group
+/// membership, because on modern systemd desktops access is granted via the
+/// `uaccess` mechanism (an ACL from systemd-logind), not via the `input` group.
+/// Depending on the `input` group is both unreliable (on Fedora it is a
+/// systemd-managed system group) and unnecessary.
+fn can_write_uinput() -> bool {
+    std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/uinput")
+        .is_ok()
 }
 
 /// Result of the host setup check, returned to the frontend.
@@ -45,18 +51,19 @@ fn in_input_group() -> bool {
 pub struct SetupStatus {
     /// The udev rule is installed.
     pub rule_installed: bool,
-    /// The user is in the `input` group.
-    pub in_input_group: bool,
+    /// The current process can open `/dev/uinput` for writing.
+    pub uinput_writable: bool,
     /// Whether `/dev/uinput` is present at all.
     pub uinput_available: bool,
 }
 
 impl SetupStatus {
     pub fn check() -> Self {
+        let uinput_available = std::path::Path::new("/dev/uinput").exists();
         Self {
             rule_installed: rule_installed(),
-            in_input_group: in_input_group(),
-            uinput_available: std::path::Path::new("/dev/uinput").exists(),
+            uinput_writable: uinput_available && can_write_uinput(),
+            uinput_available,
         }
     }
 }
@@ -64,8 +71,8 @@ impl SetupStatus {
 /// Embedded helper script executed as root via `pkexec`.
 ///
 /// It is written to a temporary file and invoked as
-/// `pkexec <path> [enable|disable]`. The PolicyKit rule (installed with the app)
-/// authorizes `pkexec` for this specific script.
+/// `pkexec <path> [enable|disable]`. `pkexec` uses the default PolicyKit action
+/// (`org.freedesktop.policykit.exec`), prompting for the administrator password.
 const HELPER_SCRIPT: &str = r#"#!/usr/bin/env bash
 set -euo pipefail
 
@@ -82,10 +89,6 @@ SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="speech-transcription", \
 
 LABEL="speech_transcription_end"
 EOF
-    # Add the invoking user (passed as $2 by the caller) to the input group.
-    if [ -n "${2:-}" ]; then
-      usermod -aG input "${2}"
-    fi
     udevadm control --reload-rules
     udevadm trigger --subsystem-match=input
     ;;
@@ -121,17 +124,8 @@ fn run_helper(action: &str) -> Result<(), String> {
     perms.set_mode(0o700);
     std::fs::set_permissions(&script_path, perms).map_err(|e| e.to_string())?;
 
-    // The invoking user (for `usermod -aG input`). pkexec does not set a
-    // variable for this, so capture it before elevating.
-    let username = std::env::var("USER")
-        .or_else(|_| std::env::var("LOGNAME"))
-        .unwrap_or_default();
-
     let mut cmd = Command::new("pkexec");
     cmd.arg(&script_path).arg(action);
-    if !username.is_empty() {
-        cmd.arg(&username);
-    }
 
     let output = cmd
         .output()

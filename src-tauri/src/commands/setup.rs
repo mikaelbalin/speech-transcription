@@ -1,7 +1,7 @@
 use crate::setup::{self, SetupStatus};
 
-/// Returns the current host-setup status (udev rule, input group membership,
-/// and whether /dev/uinput exists).
+/// Returns the current host-setup status (udev rule, /dev/uinput write
+/// access, and whether /dev/uinput exists).
 #[tauri::command]
 pub fn check_setup_status() -> SetupStatus {
     SetupStatus::check()
