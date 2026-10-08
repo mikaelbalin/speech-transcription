@@ -1,5 +1,6 @@
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::os::fd::AsRawFd;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 /// Sends Ctrl+V using a uinput virtual keyboard (works on Wayland).
@@ -13,6 +14,38 @@ use std::time::Duration;
 /// Requires write access to `/dev/uinput` (root, or `input` group via a udev
 /// rule — configured by the installer, not during development).
 pub fn send_paste() -> Result<(), String> {
+    let file = device_file()?;
+    let fd = file.as_raw_fd();
+
+    // Ctrl down.
+    write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 1)?;
+    // V down.
+    write_event(fd, EV_KEY as u16, KEY_V as u16, 1)?;
+    // V up.
+    write_event(fd, EV_KEY as u16, KEY_V as u16, 0)?;
+    // Ctrl up.
+    write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 0)?;
+
+    Ok(())
+}
+
+/// Returns the lazily-created, reused uinput keyboard file. The `File` is kept
+/// alive for the process lifetime (holding the underlying fd open).
+///
+/// The device is created once and kept alive for the process lifetime. Creating
+/// it on every paste was prohibitively slow: KWin/libinput attach to a new
+/// uinput device asynchronously, so each creation required a ~1s sleep before
+/// keystrokes would be accepted.
+fn device_file() -> Result<&'static File, String> {
+    static FILE: OnceLock<Result<File, String>> = OnceLock::new();
+    match FILE.get_or_init(create_device) {
+        Ok(file) => Ok(file),
+        Err(e) => Err(e.clone()),
+    }
+}
+
+/// Creates the uinput keyboard and waits for the compositor to attach to it.
+fn create_device() -> Result<File, String> {
     let file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -69,22 +102,11 @@ pub fn send_paste() -> Result<(), String> {
 
     // KWin/libinput does not open the device synchronously — give the
     // compositor a moment to attach before emitting events, otherwise the
-    // keystrokes are dropped.
+    // keystrokes are dropped. This one-time cost is paid only at device
+    // creation, not on every paste.
     std::thread::sleep(Duration::from_millis(1000));
 
-    // Ctrl down.
-    write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 1)?;
-    std::thread::sleep(Duration::from_millis(20));
-    // V down.
-    write_event(fd, EV_KEY as u16, KEY_V as u16, 1)?;
-    std::thread::sleep(Duration::from_millis(20));
-    // V up.
-    write_event(fd, EV_KEY as u16, KEY_V as u16, 0)?;
-    std::thread::sleep(Duration::from_millis(20));
-    // Ctrl up.
-    write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 0)?;
-
-    Ok(())
+    Ok(file)
 }
 
 /// Writes a single input event followed by a SYN_REPORT.

@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -7,6 +8,60 @@ mod uinput_impl;
 #[cfg(not(target_os = "linux"))]
 mod enigo_impl;
 
+/// The original clipboard content, saved at the start of a paste session and
+/// restored at the end. `None` means either no session is active, or the
+/// clipboard was originally empty.
+static SAVED_CLIPBOARD: Mutex<Option<Option<String>>> = Mutex::new(None);
+
+/// Begins a paste session: snapshots the current clipboard so it can be
+/// restored later. Call once before a burst of `paste` calls (e.g. at the
+/// start of a dictation session).
+///
+/// Idempotent: if a session is already active, the existing snapshot is kept.
+pub fn begin_paste_session(app: &AppHandle) {
+    let mut guard = SAVED_CLIPBOARD.lock().unwrap();
+    if guard.is_some() {
+        return;
+    }
+    *guard = Some(app.clipboard().read_text().ok());
+}
+
+/// Ends a paste session: restores the clipboard to its pre-session content and
+/// clears the saved snapshot.
+pub fn end_paste_session(app: &AppHandle) {
+    let saved = match SAVED_CLIPBOARD.lock().unwrap().take() {
+        Some(saved) => saved,
+        None => return,
+    };
+    match saved {
+        Some(previous) => {
+            let _ = app.clipboard().write_text(previous);
+        }
+        None => {
+            let _ = app.clipboard().clear();
+        }
+    }
+}
+
+/// RAII guard that restores the clipboard on drop. Prefer this over manual
+/// `begin`/`end` pairing so the clipboard is restored even on error paths.
+pub struct PasteSessionGuard {
+    app: AppHandle,
+}
+
+impl PasteSessionGuard {
+    pub fn new(app: &AppHandle) -> Self {
+        begin_paste_session(app);
+        Self { app: app.clone() }
+    }
+}
+
+impl Drop for PasteSessionGuard {
+    fn drop(&mut self) {
+        end_paste_session(&self.app);
+    }
+}
+
 /// Inserts `text` into the currently focused field by writing it to the
 /// clipboard and sending a paste keystroke.
 ///
@@ -15,18 +70,15 @@ mod enigo_impl;
 ///
 /// On Linux, if `/dev/uinput` is unavailable (no permissions), falls back to
 /// writing the clipboard only — the user must press Ctrl+V manually.
+///
+/// Clipboard save/restore is handled at the session level (see
+/// `begin_paste_session` / `end_paste_session`), so this function does not
+/// touch the original clipboard and avoids per-paste delays.
 pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
-    // Save current clipboard text (if any) to restore afterwards.
-    let saved = app.clipboard().read_text().ok();
-
     // Write the transcription to the clipboard.
     app.clipboard()
         .write_text(text.to_string())
         .map_err(|e| format!("Failed to write clipboard: {e}"))?;
-
-    // Give the compositor a moment to register us as the clipboard owner
-    // before sending the paste keystroke (needed on Wayland).
-    std::thread::sleep(std::time::Duration::from_millis(150));
 
     let result = send_paste_keystroke();
 
@@ -34,20 +86,6 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
     // the clipboard — log it so the user knows auto-paste did not happen.
     if let Err(e) = &result {
         eprintln!("[paste] auto-paste failed: {e}. Text left in clipboard.");
-    }
-
-    // Restore the original clipboard content AFTER the paste has had time to
-    // be delivered. On Wayland the compositor serves the clipboard
-    // asynchronously, so restoring immediately would clobber the text before
-    // the focused app reads it (the paste would insert stale/empty content).
-    std::thread::sleep(std::time::Duration::from_millis(300));
-    match saved {
-        Some(previous) => {
-            let _ = app.clipboard().write_text(previous);
-        }
-        None => {
-            let _ = app.clipboard().clear();
-        }
     }
 
     result

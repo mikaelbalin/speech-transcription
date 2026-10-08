@@ -83,6 +83,11 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
 
     crate::overlay::show_overlay(app);
 
+    // Snapshot the clipboard once for the whole session; pastes during the
+    // session won't touch the original content, and it's restored on drop
+    // (including error paths).
+    let _paste_guard = crate::paste::PasteSessionGuard::new(app);
+
     let mut recorder =
         crate::audio::start_recorder(settings.sample_rate, &settings.input_device_id)?;
 
@@ -93,24 +98,20 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
             MistralSession::connect(&settings.base_url, &settings.api_key, &settings.model).await?;
         let (mut writer, mut reader) = (session.writer, session.reader);
 
-        // Shared accumulation buffer for the event loop.
-        let buffer = Arc::new(std::sync::Mutex::new(String::new()));
-
-        // Event loop: read events, accumulate deltas, finalize on `done`.
+        // Event loop: read events and paste each finalized text delta as it
+        // arrives, so text is inserted continuously during dictation.
         let app_events = app.clone();
-        let buffer_events = Arc::clone(&buffer);
         let event_task = tokio::spawn(async move {
             while let Some(ev) = reader.next().await {
                 match ev? {
                     TranscriptionEvent::SessionCreated => {}
                     TranscriptionEvent::TextDelta { text } => {
-                        buffer_events.lock().unwrap().push_str(&text);
-                        let _ = app_events.emit("transcription-delta", text);
+                        let _ = app_events.emit("transcription-delta", text.clone());
+                        finalize(&app_events, &text);
                     }
                     TranscriptionEvent::Done => {
-                        let mut b = buffer_events.lock().unwrap();
-                        finalize(&app_events, &b);
-                        b.clear();
+                        // Signal the frontend that the session is finished.
+                        let _ = app_events.emit("transcription-done", "");
                     }
                     TranscriptionEvent::Error { error } => {
                         return Err(error.map(|e| e.to_string()).unwrap_or_default());
@@ -139,12 +140,6 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
 
         // Wait for the event loop to finish draining.
         let _ = event_task.await;
-
-        // Paste any remaining accumulated text.
-        let b = buffer.lock().unwrap();
-        if !b.is_empty() {
-            finalize(app, &b);
-        }
 
         crate::overlay::hide_overlay(app);
 
@@ -176,7 +171,7 @@ fn rms_level(chunk: &[u8]) -> f64 {
     (rms / 32768.0 * 5.0).min(1.0)
 }
 
-/// Inserts finalized text into the focused field and emits a `done` event.
+/// Inserts text into the focused field.
 fn finalize(app: &AppHandle, text: &str) {
     if text.trim().is_empty() {
         eprintln!("[finalize] empty text, skipping paste");
@@ -184,9 +179,7 @@ fn finalize(app: &AppHandle, text: &str) {
     }
     eprintln!("[finalize] pasting: {:?}", text);
     match crate::paste::paste(app, text) {
-        Ok(()) => {
-            let _ = app.emit("transcription-done", text.to_string());
-        }
+        Ok(()) => {}
         Err(e) => {
             eprintln!("[finalize] paste error: {e}");
             let _ = app.emit("transcription-error", e.clone());
