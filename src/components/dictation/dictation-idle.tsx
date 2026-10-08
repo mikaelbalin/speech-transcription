@@ -4,7 +4,13 @@ import { Mic } from "lucide-react";
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
 import { Kbd } from "@/components/ui/kbd";
 import { shortcutParts } from "@/lib/shortcut";
 import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
@@ -66,31 +72,31 @@ function IdleFooter() {
   const parts = shortcutParts(shortcut);
 
   return (
-    <Card className="flex w-full flex-row items-center justify-between gap-4 px-4 py-3">
-      <div className="flex flex-col text-left gap-1">
-        <span className="text-xs font-medium text-card-foreground">
-          Awaiting voice capture
-        </span>
-        <span className="text-xs text-muted-foreground">
+    <Item variant="outline">
+      <ItemContent>
+        <ItemTitle>Awaiting voice capture</ItemTitle>
+        <ItemDescription>
           Press trigger or begin speaking to buffer audio stream
-        </span>
-      </div>
+        </ItemDescription>
+      </ItemContent>
 
       {parts.length ? (
-        <div className="flex gap-1">
+        <ItemActions>
           {parts.map(({ key, node }, i) => (
             <span key={key} className="flex items-center gap-1">
               {i > 0 && <span className="text-muted-foreground">+</span>}
               <Kbd>{node}</Kbd>
             </span>
           ))}
-        </div>
+        </ItemActions>
       ) : (
-        <Button size="sm" render={<Link to="/settings" />}>
-          Configure trigger
-        </Button>
+        <ItemActions>
+          <Button size="sm" render={<Link to="/settings" />}>
+            Configure trigger
+          </Button>
+        </ItemActions>
       )}
-    </Card>
+    </Item>
   );
 }
 
