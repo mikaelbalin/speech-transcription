@@ -66,7 +66,13 @@ export function Dictation() {
   }
 
   if (isRecording) {
-    return <DictationRecording liveText={liveText} onCancel={stop} />;
+    return (
+      <DictationRecording
+        liveText={liveText}
+        onTextChange={setLiveText}
+        onCancel={stop}
+      />
+    );
   }
 
   return <DictationIdle onStart={start} />;

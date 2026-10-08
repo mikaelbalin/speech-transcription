@@ -10,6 +10,7 @@ const meta: Meta<typeof DictationRecording> = {
   tags: ["autodocs"],
   args: {
     liveText: "",
+    onTextChange: () => {},
     onCancel: () => {},
   },
 };
