@@ -12,6 +12,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { StatusDot } from "@/components/ui/status-dot";
 import { shortcutParts } from "@/lib/shortcut";
 import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
 import { useShortcut } from "@/lib/use-shortcut";
@@ -22,16 +23,10 @@ function IdleHeader({ device }: { device?: InputDevice | null }) {
   return (
     <>
       <div className="flex h-8 items-center gap-2 rounded-lg bg-muted px-3 text-sm">
-        <div
-          className={
-            ready
-              ? "h-2 w-2 shrink-0 rounded-full bg-emerald-500"
-              : "h-2 w-2 shrink-0 rounded-full bg-destructive"
-          }
-        />
+        <StatusDot variant={ready ? "success" : "destructive"} />
 
         <span className="text-muted-foreground">Input:</span>
-        <span className="inline-flex items-center font-mono text-xs leading-none text-foreground">
+        <span className="font-mono text-xs leading-none text-foreground">
           {device?.name ?? "No microphone detected"}
         </span>
       </div>
