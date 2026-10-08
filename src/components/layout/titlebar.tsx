@@ -1,8 +1,17 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minus, Square, X } from "lucide-react";
+import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarShortcut,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 const appWindow = isTauri() ? getCurrentWindow() : null;
 
@@ -34,11 +43,46 @@ export function Titlebar() {
     };
   }, []);
 
+  async function toggleFullscreen() {
+    if (!appWindow) return;
+    const isFullscreen = await appWindow.isFullscreen();
+    await appWindow.setFullscreen(!isFullscreen);
+  }
+
   return (
     <div className="flex h-9 items-center bg-muted select-none px-1">
+      <Menubar>
+        <MenubarMenu>
+          <MenubarTrigger>File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={() => appWindow?.close()}>
+              Quit
+              <MenubarShortcut>Ctrl+Q</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        <MenubarMenu>
+          <MenubarTrigger>View</MenubarTrigger>
+          <MenubarContent className="min-w-58">
+            <MenubarItem onClick={() => window.location.reload()}>
+              Reload
+              <MenubarShortcut>Ctrl+R</MenubarShortcut>
+            </MenubarItem>
+
+            <MenubarItem onClick={toggleFullscreen}>
+              Toggle Fullscreen
+              <MenubarShortcut>F11</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+
       <div data-tauri-drag-region className="flex-1 self-stretch" />
 
       <div className="flex items-center">
+        <ModeToggle />
+
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -57,7 +101,11 @@ export function Titlebar() {
             size="icon-sm"
             variant="ghost"
           >
-            <Square className="size-4" />
+            {maximized ? (
+              <Copy className="size-4" />
+            ) : (
+              <Square className="size-4" />
+            )}
           </Button>
 
           <Button
