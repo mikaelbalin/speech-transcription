@@ -1,4 +1,5 @@
-import { AudioLines, Mic } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Mic } from "lucide-react";
 
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -85,9 +86,9 @@ function IdleFooter() {
           ))}
         </div>
       ) : (
-        <span className="rounded border bg-muted px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-muted-foreground">
-          Not set
-        </span>
+        <Button size="sm" render={<Link to="/settings" />}>
+          Configure trigger
+        </Button>
       )}
     </Card>
   );
