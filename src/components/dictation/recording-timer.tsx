@@ -27,7 +27,7 @@ export function RecordingTimer() {
   }, []);
 
   return (
-    <span className="ml-2 font-mono text-xs text-destructive">
+    <span className="font-mono text-xs text-destructive">
       {formatTime(elapsedTime)}
     </span>
   );

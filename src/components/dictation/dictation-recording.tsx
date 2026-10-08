@@ -15,7 +15,7 @@ import { RecordingTimer } from "./recording-timer";
 function RecordingHeader() {
   return (
     <>
-      <div className="flex h-8 items-center gap-1 rounded-lg bg-destructive/10 px-3 text-sm">
+      <div className="flex h-8 items-center gap-3 rounded-lg bg-destructive/10 px-3 text-sm">
         <StatusDot variant="destructive" pulse />
         <RecordingTimer />
       </div>

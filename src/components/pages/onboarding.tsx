@@ -3,7 +3,6 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { CheckCircle2, Circle, ShieldCheck } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code } from "@/components/ui/code";
@@ -84,7 +83,7 @@ export function Onboarding() {
         <div className="flex w-full items-center justify-between">
           <div>
             <h1 className="font-heading text-base leading-snug font-medium">
-              Welcome
+              {complete ? "Setup" : "Welcome"}
             </h1>
             <p className="text-sm text-muted-foreground">
               One-time setup for auto-paste on Linux.
@@ -157,13 +156,6 @@ export function Onboarding() {
               <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
-            )}
-
-            {complete && (
-              <Badge variant="secondary" className="w-fit gap-1">
-                <CheckCircle2 className="size-3" />
-                Ready
-              </Badge>
             )}
           </CardContent>
         </Card>
