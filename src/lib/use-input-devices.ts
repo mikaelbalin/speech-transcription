@@ -33,9 +33,11 @@ export function useInputDevices() {
 
   const defaultDevice = devices.find((d) => d.isDefault) ?? devices[0] ?? null;
 
+  // Resolve the selected device, falling back to the system default when the
+  // saved id is empty or no longer matches an available device (e.g. the saved
+  // microphone was disconnected).
   const selectedDevice =
-    devices.find((d) => d.id === inputDeviceId) ??
-    (inputDeviceId ? null : defaultDevice);
+    devices.find((d) => d.id === inputDeviceId) ?? defaultDevice;
 
   return { devices, defaultDevice, selectedDevice };
 }

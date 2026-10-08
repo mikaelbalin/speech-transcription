@@ -130,6 +130,14 @@ export function SettingsForm({
   const shortcut = shortcutField.state.value;
   const hasShortcut = shortcut.trim().length > 0;
 
+  // Resolve the device to display, falling back to the system default when the
+  // saved id is empty or no longer matches an available device (e.g. the saved
+  // microphone was disconnected).
+  const defaultDevice = devices.find((d) => d.isDefault) ?? devices[0] ?? null;
+  const resolvedDevice =
+    devices.find((d) => d.id === inputDeviceIdField.state.value) ??
+    defaultDevice;
+
   return (
     <PageLayout
       header={
@@ -330,13 +338,10 @@ export function SettingsForm({
             </FieldLabel>
             <Combobox
               value={
-                devices.find((d) => d.id === inputDeviceIdField.state.value)
+                resolvedDevice
                   ? {
                       value: inputDeviceIdField.state.value,
-                      label:
-                        devices.find(
-                          (d) => d.id === inputDeviceIdField.state.value,
-                        )?.name ?? "",
+                      label: resolvedDevice.name,
                     }
                   : null
               }
