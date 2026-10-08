@@ -11,7 +11,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-import { Kbd } from "@/components/ui/kbd";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { shortcutParts } from "@/lib/shortcut";
 import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
 import { useShortcut } from "@/lib/use-shortcut";
@@ -82,12 +82,14 @@ function IdleFooter() {
 
       {parts.length ? (
         <ItemActions>
-          {parts.map(({ key, node }, i) => (
-            <span key={key} className="flex items-center gap-1">
-              {i > 0 && <span className="text-muted-foreground">+</span>}
-              <Kbd>{node}</Kbd>
-            </span>
-          ))}
+          <KbdGroup>
+            {parts.map(({ key, node }, i) => (
+              <span key={key} className="flex items-center gap-1">
+                {i > 0 && <span className="text-muted-foreground">+</span>}
+                <Kbd>{node}</Kbd>
+              </span>
+            ))}
+          </KbdGroup>
         </ItemActions>
       ) : (
         <ItemActions>
