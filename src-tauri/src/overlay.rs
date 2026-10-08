@@ -13,11 +13,12 @@
 //! Fallback: if the compositor doesn't support gtk-layer-shell (e.g. GNOME or
 //! X11), the window is shown as a regular always-on-top window.
 
+use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 /// Logical size of the overlay card.
-const OVERLAY_WIDTH: f64 = 420.0;
-const OVERLAY_HEIGHT: f64 = 120.0;
+const OVERLAY_WIDTH: f64 = 320.0;
+const OVERLAY_HEIGHT: f64 = 44.0;
 
 /// Margin from the top edge of the screen (logical px).
 const OVERLAY_TOP_MARGIN: i32 = 12;
@@ -44,7 +45,6 @@ pub fn create_overlay(app_handle: &AppHandle) {
     .always_on_top(true)
     .skip_taskbar(true)
     .transparent(true)
-    .focusable(false)
     .visible(false);
 
     match builder.build() {
@@ -81,7 +81,7 @@ fn init_gtk_layer_shell(window: &tauri::WebviewWindow) -> bool {
 
     gtk_window.init_layer_shell();
     gtk_window.set_layer(Layer::Overlay);
-    gtk_window.set_keyboard_mode(KeyboardMode::None);
+    gtk_window.set_keyboard_mode(KeyboardMode::OnDemand);
     gtk_window.set_exclusive_zone(0);
 
     // Anchor to the top edge only; center it horizontally with equal left/right
@@ -99,6 +99,18 @@ fn init_gtk_layer_shell(window: &tauri::WebviewWindow) -> bool {
     initialized
 }
 
+/// Emits an event directly to the overlay window's webview.
+///
+/// The overlay is a separate `focusable(false)` window; targeting it explicitly
+/// (rather than broadcasting via `AppHandle::emit`) guarantees delivery even
+/// when the event originates from a background thread. No-op if the window
+/// handle is unavailable.
+pub fn emit_overlay<S: Serialize + Clone>(app_handle: &AppHandle, event: &str, payload: S) {
+    if let Some(window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = window.emit(event, payload);
+    }
+}
+
 /// Shows the overlay window.
 ///
 /// GTK is not thread-safe: `show()` must run on the main thread. Callers are
@@ -108,7 +120,7 @@ pub fn show_overlay(app_handle: &AppHandle) {
     let handle = app_handle.clone();
     let _ = app_handle.run_on_main_thread(move || {
         if let Some(window) = handle.get_webview_window("recording_overlay") {
-            let _ = handle.emit("show-overlay", ());
+            let _ = window.emit("show-overlay", ());
             let _ = window.show();
         }
     });
@@ -121,7 +133,7 @@ pub fn hide_overlay(app_handle: &AppHandle) {
     let handle = app_handle.clone();
     let _ = app_handle.run_on_main_thread(move || {
         if let Some(window) = handle.get_webview_window("recording_overlay") {
-            let _ = handle.emit("hide-overlay", ());
+            let _ = window.emit("hide-overlay", ());
             let _ = window.hide();
         }
     });

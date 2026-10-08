@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 use crate::managers::TranscriptionManager;
 
@@ -14,4 +14,21 @@ pub fn start_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionM
 #[tauri::command]
 pub fn stop_transcription(manager: State<'_, Arc<TranscriptionManager>>) {
     manager.stop();
+}
+
+/// Pauses the current session: audio stops being sent to Mistral while the
+/// connection stays open. Emits a `paused` event so the overlay can update.
+#[tauri::command]
+pub fn pause_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionManager>>) {
+    if manager.pause() {
+        let _ = app.emit("paused", ());
+    }
+}
+
+/// Resumes a paused session. Emits a `resumed` event.
+#[tauri::command]
+pub fn resume_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionManager>>) {
+    if manager.resume() {
+        let _ = app.emit("resumed", ());
+    }
 }

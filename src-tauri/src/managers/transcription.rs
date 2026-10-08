@@ -11,14 +11,19 @@ use crate::settings::get_settings;
 /// Mistral realtime API, accumulate deltas, and paste the finalized text.
 ///
 /// Kept deliberately simple: one session at a time, guarded by an atomic flag.
+/// A session can be paused — while paused, captured audio chunks are dropped
+/// instead of being sent to Mistral, but the WebSocket connection stays open so
+/// resuming is instant (no reconnect).
 pub struct TranscriptionManager {
     running: Arc<AtomicBool>,
+    paused: Arc<AtomicBool>,
 }
 
 impl TranscriptionManager {
     pub fn new() -> Self {
         Self {
             running: Arc::new(AtomicBool::new(false)),
+            paused: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -29,13 +34,17 @@ impl TranscriptionManager {
             return; // already running
         }
 
+        self.paused.store(false, Ordering::Release);
+
         let running = Arc::clone(&self.running);
+        let paused = Arc::clone(&self.paused);
         std::thread::spawn(move || {
-            let result = run_session(&app, &running);
+            let result = run_session(&app, &running, &paused);
             if let Err(e) = result {
                 let _ = app.emit("transcription-error", e);
             }
             running.store(false, Ordering::Release);
+            paused.store(false, Ordering::Release);
         });
     }
 
@@ -43,10 +52,29 @@ impl TranscriptionManager {
     pub fn stop(&self) {
         self.running.store(false, Ordering::Release);
     }
+
+    /// Pauses the current session: audio chunks stop being sent to Mistral, but
+    /// the connection stays open. No-op if not running or already paused.
+    pub fn pause(&self) -> bool {
+        if !self.running.load(Ordering::Acquire) {
+            return false;
+        }
+        self.paused.store(true, Ordering::Release);
+        true
+    }
+
+    /// Resumes a paused session. No-op if not running or not paused.
+    pub fn resume(&self) -> bool {
+        if !self.running.load(Ordering::Acquire) {
+            return false;
+        }
+        self.paused.store(false, Ordering::Release);
+        true
+    }
 }
 
 /// Runs the full capture → transcribe → paste flow.
-fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
+fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Result<(), String> {
     // Install the Rustls crypto provider (ring) before the first TLS connection.
     // Safe to call repeatedly; ignores the error if already installed.
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -92,11 +120,19 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
             Ok(())
         });
 
-        // Audio loop: capture and send until told to stop.
+        // Audio loop: capture and send until told to stop. While streaming,
+        // also emit the instantaneous input level so the overlay can render a
+        // live volume meter without capturing the microphone itself. While
+        // paused, chunks are drained (so the recorder pipe doesn't back up) but
+        // dropped instead of being sent to Mistral — the connection stays open.
         while running.load(Ordering::Acquire) {
             let Some(chunk) = recorder.next_chunk() else {
                 break;
             };
+            if paused.load(Ordering::Acquire) {
+                continue;
+            }
+            crate::overlay::emit_overlay(app, "audio-level", rms_level(&chunk));
             writer.send(&chunk).await?;
         }
         let _ = writer.finish().await;
@@ -116,6 +152,30 @@ fn run_session(app: &AppHandle, running: &AtomicBool) -> Result<(), String> {
     })
 }
 
+/// Computes the root-mean-square level of a `pcm_s16le` mono chunk, normalized
+/// to `0.0..=1.0`. Used to drive the overlay's live volume meter.
+fn rms_level(chunk: &[u8]) -> f64 {
+    if chunk.len() < 2 {
+        return 0.0;
+    }
+    // Interpret pairs of little-endian bytes as i16 samples.
+    let samples = chunk.chunks_exact(2);
+    let mut sum_squares = 0f64;
+    let mut count = 0usize;
+    for pair in samples {
+        let sample = i16::from_le_bytes([pair[0], pair[1]]) as f64;
+        sum_squares += sample * sample;
+        count += 1;
+    }
+    if count == 0 {
+        return 0.0;
+    }
+    let rms = (sum_squares / count as f64).sqrt();
+    // Normalize against i16 max amplitude (32768), then apply a gentle gain so
+    // quiet speech still produces a visible meter.
+    (rms / 32768.0 * 5.0).min(1.0)
+}
+
 /// Inserts finalized text into the focused field and emits a `done` event.
 fn finalize(app: &AppHandle, text: &str) {
     if text.trim().is_empty() {
@@ -129,7 +189,8 @@ fn finalize(app: &AppHandle, text: &str) {
         }
         Err(e) => {
             eprintln!("[finalize] paste error: {e}");
-            let _ = app.emit("transcription-error", e);
+            let _ = app.emit("transcription-error", e.clone());
+            crate::overlay::emit_overlay(app, "transcription-error", e);
         }
     }
 }

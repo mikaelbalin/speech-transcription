@@ -33,6 +33,8 @@ pub fn run() {
             commands::audio::get_devices,
             commands::transcription::start_transcription,
             commands::transcription::stop_transcription,
+            commands::transcription::pause_transcription,
+            commands::transcription::resume_transcription,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
