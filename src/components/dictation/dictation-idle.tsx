@@ -14,18 +14,20 @@ function IdleHeader({ device }: { device?: InputDevice | null }) {
   return (
     <>
       <div className="flex h-8 items-center gap-2 rounded-lg bg-muted px-3 text-sm">
-        <span
+        <div
           className={
             ready
               ? "h-2 w-2 shrink-0 rounded-full bg-emerald-500"
               : "h-2 w-2 shrink-0 rounded-full bg-destructive"
           }
         />
+
         <span className="text-muted-foreground">Input:</span>
         <span className="inline-flex items-center font-mono text-xs leading-none text-foreground">
           {device?.name ?? "No microphone detected"}
         </span>
       </div>
+
       <div className="flex items-center gap-2">
         <AppHeaderActions showSettings />
       </div>
@@ -61,6 +63,7 @@ function IdleBody({ onStart }: { onStart: () => void }) {
           focused application.
         </p>
       </div>
+
       <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm">
         <span className="text-muted-foreground">Global trigger:</span>
         {parts.length ? (

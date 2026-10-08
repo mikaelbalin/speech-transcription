@@ -1,11 +1,12 @@
 import { Link, useSearch } from "@tanstack/react-router";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { CheckCircle2, Circle, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Code } from "@/components/ui/code";
 
 /**
  * Mirrors the Rust `SetupStatus` (serde camelCase) returned by the
@@ -108,7 +109,7 @@ export function Onboarding() {
               onClick={finish}
               className={buttonVariants({ variant: "default" })}
             >
-              Continue
+              Done
             </Link>
           ) : (
             <Button
@@ -134,16 +135,21 @@ export function Onboarding() {
           <CardContent className="flex flex-col gap-3 text-sm">
             <p className="text-muted-foreground">
               On Wayland, inserting text into another app requires a virtual
-              keyboard (<code>uinput</code>). This needs two small, one-time
+              keyboard (<Code>uinput</Code>). This needs two small, one-time
               system changes:
             </p>
 
             <StatusRow
-              label="udev rule (virtual keyboard → seat0)"
+              label="udev rule (virtual keyboard -> seat0)"
               done={status?.ruleInstalled ?? false}
             />
+
             <StatusRow
-              label="Write access to /dev/uinput"
+              label={
+                <>
+                  Write access to <Code>/dev/uinput</Code>
+                </>
+              }
               done={status?.uinputWritable ?? false}
             />
 
@@ -171,7 +177,7 @@ export function Onboarding() {
   );
 }
 
-function StatusRow({ label, done }: { label: string; done: boolean }) {
+function StatusRow({ label, done }: { label: ReactNode; done: boolean }) {
   return (
     <div className="flex items-center gap-2">
       {done ? (

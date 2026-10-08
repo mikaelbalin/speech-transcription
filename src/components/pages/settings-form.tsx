@@ -142,15 +142,10 @@ export function SettingsForm({
     <PageLayout
       header={
         <div className="flex w-full items-center justify-between">
-          <div>
-            <h1 className="font-heading text-base leading-snug font-medium">
-              Configuration
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Manage Mistral realtime inference endpoints, audio devices, and
-              hotkeys.
-            </p>
-          </div>
+          <h1 className="font-heading text-base leading-snug font-medium">
+            Configuration
+          </h1>
+
           <div className="flex items-center gap-2">
             <AppHeaderActions showOnboarding />
           </div>
