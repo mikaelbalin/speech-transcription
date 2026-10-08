@@ -51,16 +51,10 @@ pub fn create_overlay(app_handle: &AppHandle) {
         Ok(window) => {
             #[cfg(target_os = "linux")]
             {
-                if init_gtk_layer_shell(&window) {
-                    eprintln!("[overlay] gtk-layer-shell initialized");
-                } else {
-                    eprintln!("[overlay] gtk-layer-shell unavailable, using fallback window");
-                }
+                let _ = init_gtk_layer_shell(&window);
             }
         }
-        Err(e) => {
-            eprintln!("[overlay] failed to create window: {e}");
-        }
+        Err(_e) => {}
     }
 }
 

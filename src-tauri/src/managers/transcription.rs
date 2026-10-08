@@ -174,14 +174,11 @@ fn rms_level(chunk: &[u8]) -> f64 {
 /// Inserts text into the focused field.
 fn finalize(app: &AppHandle, text: &str) {
     if text.trim().is_empty() {
-        eprintln!("[finalize] empty text, skipping paste");
         return;
     }
-    eprintln!("[finalize] pasting: {:?}", text);
     match crate::paste::paste(app, text) {
         Ok(()) => {}
         Err(e) => {
-            eprintln!("[finalize] paste error: {e}");
             let _ = app.emit("transcription-error", e.clone());
             crate::overlay::emit_overlay(app, "transcription-error", e);
         }
