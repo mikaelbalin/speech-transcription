@@ -1,8 +1,9 @@
-import { Mic } from "lucide-react";
+import { AudioLines, Mic } from "lucide-react";
 
 import { AppHeaderActions } from "@/components/layout/app-header-actions";
 import { PageLayout } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Kbd } from "@/components/ui/kbd";
 import { shortcutParts } from "@/lib/shortcut";
 import { type InputDevice, useInputDevices } from "@/lib/use-input-devices";
@@ -36,9 +37,6 @@ function IdleHeader({ device }: { device?: InputDevice | null }) {
 }
 
 function IdleBody({ onStart }: { onStart: () => void }) {
-  const { shortcut } = useShortcut();
-  const parts = shortcutParts(shortcut);
-
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
       <div className="group relative cursor-pointer">
@@ -58,33 +56,40 @@ function IdleBody({ onStart }: { onStart: () => void }) {
           </span>
         </Button>
       </div>
-
-      <div className="flex flex-col items-center gap-1">
-        <h2 className="text-lg font-medium tracking-tight">Press to Dictate</h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Realtime speech-to-text token stream routed directly to your active
-          focused application.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm">
-        <span className="text-muted-foreground">Global trigger:</span>
-        {parts.length ? (
-          <span className="flex items-center gap-1 font-mono text-xs">
-            {parts.map(({ key, node }, i) => (
-              <span key={key} className="flex items-center gap-1">
-                {i > 0 && <span className="text-muted-foreground">+</span>}
-                <Kbd className="bg-background text-foreground">{node}</Kbd>
-              </span>
-            ))}
-          </span>
-        ) : (
-          <span className="font-mono text-xs text-muted-foreground">
-            Not set
-          </span>
-        )}
-      </div>
     </div>
+  );
+}
+
+function IdleFooter() {
+  const { shortcut } = useShortcut();
+  const parts = shortcutParts(shortcut);
+
+  return (
+    <Card className="flex w-full flex-row items-center justify-between gap-4 px-4 py-3">
+      <div className="flex flex-col text-left gap-1">
+        <span className="text-xs font-medium text-card-foreground">
+          Awaiting voice capture
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Press trigger or begin speaking to buffer audio stream
+        </span>
+      </div>
+
+      {parts.length ? (
+        <div className="flex gap-1">
+          {parts.map(({ key, node }, i) => (
+            <span key={key} className="flex items-center gap-1">
+              {i > 0 && <span className="text-muted-foreground">+</span>}
+              <Kbd>{node}</Kbd>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="rounded border bg-muted px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-muted-foreground">
+          Not set
+        </span>
+      )}
+    </Card>
   );
 }
 
@@ -92,7 +97,10 @@ export function DictationIdle({ onStart }: { onStart: () => void }) {
   const { selectedDevice } = useInputDevices();
 
   return (
-    <PageLayout header={<IdleHeader device={selectedDevice} />}>
+    <PageLayout
+      header={<IdleHeader device={selectedDevice} />}
+      footer={<IdleFooter />}
+    >
       <IdleBody onStart={onStart} />
     </PageLayout>
   );
