@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/combobox";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -137,6 +138,11 @@ export function SettingsForm({
   const resolvedDevice =
     devices.find((d) => d.id === inputDeviceIdField.state.value) ??
     defaultDevice;
+
+  // The saved microphone was replaced by the fallback default.
+  const deviceIsFallback =
+    Boolean(inputDeviceIdField.state.value) &&
+    !devices.some((d) => d.id === inputDeviceIdField.state.value);
 
   return (
     <PageLayout
@@ -364,6 +370,12 @@ export function SettingsForm({
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
+            {deviceIsFallback && (
+              <FieldDescription>
+                The previously selected microphone is unavailable, the system
+                default is being used.
+              </FieldDescription>
+            )}
           </Field>
         </FieldGroup>
       </form>
