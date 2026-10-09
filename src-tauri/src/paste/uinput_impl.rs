@@ -19,14 +19,28 @@ pub fn send_paste() -> Result<(), String> {
 
     // Ctrl down.
     write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 1)?;
+    sleep(PAUSE_BETWEEN_EVENTS);
     // V down.
     write_event(fd, EV_KEY as u16, KEY_V as u16, 1)?;
+    sleep(PAUSE_BETWEEN_EVENTS);
     // V up.
     write_event(fd, EV_KEY as u16, KEY_V as u16, 0)?;
+    sleep(PAUSE_BETWEEN_EVENTS);
     // Ctrl up.
     write_event(fd, EV_KEY as u16, KEY_LEFTCTRL as u16, 0)?;
+    sleep(PAUSE_BETWEEN_EVENTS);
 
     Ok(())
+}
+
+/// Delay between individual input events. Back-to-back writes to `/dev/uinput`
+/// can be coalesced by the compositor (or arrive before the clipboard is ready),
+/// truncating the pasted text. A short pause between key state changes gives the
+/// compositor and target application time to process each event.
+const PAUSE_BETWEEN_EVENTS: Duration = Duration::from_millis(20);
+
+fn sleep(duration: Duration) {
+    std::thread::sleep(duration);
 }
 
 /// Returns the lazily-created, reused uinput keyboard file. The `File` is kept

@@ -80,6 +80,14 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
         .write_text(text.to_string())
         .map_err(|e| format!("Failed to write clipboard: {e}"))?;
 
+    // On Wayland the clipboard is owned by the compositor and `write_text` does
+    // an asynchronous round-trip (via wl-clipboard/xclip). If we send the paste
+    // keystroke immediately, the target app can paste stale/empty content and
+    // truncate the beginning of the text. Give the clipboard a moment to settle
+    // before pasting.
+    #[cfg(target_os = "linux")]
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
     let result = send_paste_keystroke();
 
     result
