@@ -82,7 +82,7 @@ export default function Overlay() {
 
       {isError ? (
         <>
-          <div className="text-[13px] font-medium text-destructive">
+          <div className="text-[13px] font-medium text-destructive whitespace-nowrap text-ellipsis overflow-hidden">
             {error}
           </div>
 

@@ -13,18 +13,23 @@ const formatTime = (centiseconds: number) => {
 /**
  * Live recording timer. Counts elapsed time in centiseconds (mm:ss.cc) while
  * mounted. The recording view is only mounted while a dictation session is
- * active, so the timer starts at zero on mount and runs until unmount.
+ * active, so the timer starts at zero on mount and runs until unmount. When
+ * `paused` is true (e.g. an error occurred), the countdown freezes.
  */
-export function RecordingTimer() {
+export function RecordingTimer({ paused = false }: { paused?: boolean }) {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
+    if (paused) {
+      return;
+    }
+
     const interval = setInterval(() => {
       setElapsedTime((prev) => prev + 1);
     }, 10);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [paused]);
 
   return (
     <span className="font-mono text-xs text-destructive">

@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
-import { DictationError } from "@/components/dictation/dictation-error";
 import { DictationIdle } from "@/components/dictation/dictation-idle";
 import { DictationRecording } from "@/components/dictation/dictation-recording";
 
@@ -61,16 +60,14 @@ export function Dictation() {
     };
   }, [toggle]);
 
-  if (error) {
-    return <DictationError error={error} onRetry={start} onBack={stop} />;
-  }
-
   if (isRecording) {
     return (
       <DictationRecording
         liveText={liveText}
+        error={error}
         onTextChange={setLiveText}
         onCancel={stop}
+        onRetry={start}
       />
     );
   }
