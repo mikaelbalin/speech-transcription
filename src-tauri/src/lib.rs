@@ -46,6 +46,7 @@ pub fn run() {
             commands::transcription::stop_transcription,
             commands::transcription::pause_transcription,
             commands::transcription::resume_transcription,
+            commands::transcription::clear_transcription,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

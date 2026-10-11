@@ -32,3 +32,11 @@ pub fn resume_transcription(app: AppHandle, manager: State<'_, Arc<Transcription
         let _ = app.emit("resumed", ());
     }
 }
+
+/// Clears the accumulated transcript of the current session. Called by the
+/// overlay's "clear" button so the final paste excludes previously dictated
+/// text.
+#[tauri::command]
+pub fn clear_transcription(manager: State<'_, Arc<TranscriptionManager>>) {
+    manager.clear_transcript();
+}

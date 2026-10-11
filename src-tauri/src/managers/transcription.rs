@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tauri::{AppHandle, Emitter};
 
@@ -17,6 +17,9 @@ use crate::settings::get_settings;
 pub struct TranscriptionManager {
     running: Arc<AtomicBool>,
     paused: Arc<AtomicBool>,
+    /// The accumulated transcript of the current session. Shared so an external
+    /// command (e.g. the overlay's "clear" button) can reset it mid-session.
+    transcript: Arc<Mutex<String>>,
 }
 
 impl TranscriptionManager {
@@ -24,6 +27,7 @@ impl TranscriptionManager {
         Self {
             running: Arc::new(AtomicBool::new(false)),
             paused: Arc::new(AtomicBool::new(false)),
+            transcript: Arc::new(Mutex::new(String::new())),
         }
     }
 
@@ -35,11 +39,13 @@ impl TranscriptionManager {
         }
 
         self.paused.store(false, Ordering::Release);
+        self.transcript.lock().unwrap().clear();
 
         let running = Arc::clone(&self.running);
         let paused = Arc::clone(&self.paused);
+        let transcript = Arc::clone(&self.transcript);
         std::thread::spawn(move || {
-            let result = run_session(&app, &running, &paused);
+            let result = run_session(&app, &running, &paused, &transcript);
             if let Err(e) = result {
                 let _ = app.emit("transcription-error", e);
             }
@@ -71,10 +77,22 @@ impl TranscriptionManager {
         self.paused.store(false, Ordering::Release);
         true
     }
+
+    /// Clears the accumulated transcript of the current session. The overlay's
+    /// "clear" button calls this so the final paste does not include previously
+    /// dictated text.
+    pub fn clear_transcript(&self) {
+        self.transcript.lock().unwrap().clear();
+    }
 }
 
 /// Runs the full capture → transcribe → paste flow.
-fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Result<(), String> {
+fn run_session(
+    app: &AppHandle,
+    running: &AtomicBool,
+    paused: &AtomicBool,
+    transcript: &Arc<Mutex<String>>,
+) -> Result<(), String> {
     // Install the Rustls crypto provider (ring) before the first TLS connection.
     // Safe to call repeatedly; ignores the error if already installed.
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -83,9 +101,10 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
 
     crate::overlay::show_overlay(app);
 
-    // Snapshot the clipboard once for the whole session; pastes during the
-    // session won't touch the original content, and it's restored on drop
-    // (including error paths).
+    // Snapshot the clipboard once for the whole session. The transcript is
+    // pasted only once at the end, so the clipboard is modified a single time;
+    // the snapshot restores the user's original content on drop (including error
+    // paths), and no intermediate content leaks into the clipboard history.
     let _paste_guard = crate::paste::PasteSessionGuard::new(app);
 
     let mut recorder =
@@ -98,16 +117,22 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
             MistralSession::connect(&settings.base_url, &settings.api_key, &settings.model).await?;
         let (mut writer, mut reader) = (session.writer, session.reader);
 
-        // Event loop: read events and paste each finalized text delta as it
-        // arrives, so text is inserted continuously during dictation.
+        // The accumulated transcript for the whole session. Deltas are appended
+        // here as they arrive and broadcast to the overlay for live display, but
+        // the text is only pasted once — at the end of the session — so the
+        // clipboard is touched a single time.
+        //
+        // The transcript is shared with `TranscriptionManager` so the overlay's
+        // "clear" button can reset it mid-session.
         let app_events = app.clone();
+        let transcript_clone = Arc::clone(transcript);
         let event_task = tokio::spawn(async move {
             while let Some(ev) = reader.next().await {
                 match ev? {
                     TranscriptionEvent::SessionCreated => {}
                     TranscriptionEvent::TextDelta { text } => {
-                        let _ = app_events.emit("transcription-delta", text.clone());
-                        finalize(&app_events, &text);
+                        transcript_clone.lock().unwrap().push_str(&text);
+                        let _ = app_events.emit("transcription-delta", text);
                     }
                     TranscriptionEvent::Done => {
                         // Signal the frontend that the session is finished.
@@ -140,6 +165,12 @@ fn run_session(app: &AppHandle, running: &AtomicBool, paused: &AtomicBool) -> Re
 
         // Wait for the event loop to finish draining.
         let _ = event_task.await;
+
+        // Paste the full transcript once, at the end of the session. This is the
+        // only time the clipboard is touched, so the user's pre-dictation
+        // clipboard content stays intact and their history is not polluted.
+        let transcript = transcript.lock().unwrap().clone();
+        finalize(app, &transcript);
 
         crate::overlay::hide_overlay(app);
 

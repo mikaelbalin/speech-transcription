@@ -17,8 +17,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 /// Logical size of the overlay card.
-const OVERLAY_WIDTH: f64 = 320.0;
-const OVERLAY_HEIGHT: f64 = 44.0;
+const OVERLAY_WIDTH: f64 = 420.0;
+const OVERLAY_HEIGHT: f64 = 200.0;
 
 /// Margin from the top edge of the screen (logical px).
 const OVERLAY_TOP_MARGIN: i32 = 12;
