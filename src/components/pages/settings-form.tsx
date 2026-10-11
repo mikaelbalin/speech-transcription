@@ -51,6 +51,7 @@ export interface AppSettings {
   sampleRate: number;
   targetDelayMs: number | null;
   shortcut: string;
+  pauseShortcut: string;
   baseUrl: string;
   inputDeviceId: string;
   activationMode: "toggle" | "hold";
@@ -62,6 +63,7 @@ const formSchema = z.object({
   model: z.string().min(1, "Model is required."),
   baseUrl: z.url("Must be a valid URL."),
   shortcut: z.string().min(1, "Shortcut is required."),
+  pauseShortcut: z.string().min(1, "Shortcut is required."),
   inputDeviceId: z.string(),
   activationMode: z.enum(["toggle", "hold"]),
 });
@@ -93,6 +95,7 @@ export function SettingsForm({
       model: initialSettings?.model ?? "voxtral-mini-transcribe-realtime-2602",
       baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
       shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
+      pauseShortcut: initialSettings?.pauseShortcut ?? "ctrl+alt+keyp",
       inputDeviceId: initialSettings?.inputDeviceId ?? "",
       activationMode: initialSettings?.activationMode ?? "toggle",
     } as FormValues,
@@ -105,6 +108,7 @@ export function SettingsForm({
         model: value.model,
         baseUrl: value.baseUrl,
         shortcut: value.shortcut,
+        pauseShortcut: value.pauseShortcut,
         sampleRate: 16000,
         targetDelayMs: null,
         inputDeviceId: value.inputDeviceId,
@@ -120,12 +124,18 @@ export function SettingsForm({
   const modelField = useField({ form, name: "model" });
   const baseUrlField = useField({ form, name: "baseUrl" });
   const shortcutField = useField({ form, name: "shortcut" });
+  const pauseShortcutField = useField({ form, name: "pauseShortcut" });
   const inputDeviceIdField = useField({ form, name: "inputDeviceId" });
   const activationModeField = useField({ form, name: "activationMode" });
 
   const { recording, toggleRecording } = useShortcutRecorder((shortcut) => {
     shortcutField.handleChange(shortcut);
   });
+
+  const { recording: recordingPause, toggleRecording: togglePauseRecording } =
+    useShortcutRecorder((shortcut) => {
+      pauseShortcutField.handleChange(shortcut);
+    });
 
   const canSubmit = useSelector(form.store, (s) => s.canSubmit);
   const isSubmitting = useSelector(form.store, (s) => s.isSubmitting);
@@ -136,6 +146,7 @@ export function SettingsForm({
     form.setFieldValue("model", initialSettings.model);
     form.setFieldValue("baseUrl", initialSettings.baseUrl);
     form.setFieldValue("shortcut", initialSettings.shortcut);
+    form.setFieldValue("pauseShortcut", initialSettings.pauseShortcut);
     form.setFieldValue("inputDeviceId", initialSettings.inputDeviceId ?? "");
     form.setFieldValue(
       "activationMode",
@@ -148,6 +159,9 @@ export function SettingsForm({
 
   const shortcut = shortcutField.state.value;
   const hasShortcut = shortcut.trim().length > 0;
+
+  const pauseShortcut = pauseShortcutField.state.value;
+  const hasPauseShortcut = pauseShortcut.trim().length > 0;
 
   // Resolve the device to display, falling back to the system default when the
   // saved id is empty or no longer matches an available device (e.g. the saved
@@ -230,6 +244,60 @@ export function SettingsForm({
                   </InputGroup>
                   {invalidOf(shortcutField.state.meta) && (
                     <FieldError errors={shortcutField.state.meta.errors} />
+                  )}
+                </Field>
+                <Field data-invalid={invalidOf(pauseShortcutField.state.meta)}>
+                  <FieldLabel htmlFor="settings-pause-shortcut">
+                    Pause / Resume Hotkey
+                  </FieldLabel>
+                  <InputGroup className="justify-between">
+                    {recordingPause ? (
+                      <InputGroupInput
+                        id="settings-pause-shortcut"
+                        placeholder="Press a key…"
+                        readOnly
+                      />
+                    ) : hasPauseShortcut ? (
+                      <InputGroupAddon align="inline-start">
+                        {shortcutParts(pauseShortcut).map(({ key, node }) => (
+                          <Kbd key={key}>{node}</Kbd>
+                        ))}
+                      </InputGroupAddon>
+                    ) : (
+                      <InputGroupAddon align="inline-start">
+                        <InputGroupText>Not set</InputGroupText>
+                      </InputGroupAddon>
+                    )}
+
+                    <InputGroupAddon align="inline-end">
+                      {hasPauseShortcut && !recordingPause && (
+                        <InputGroupButton
+                          size="icon-xs"
+                          type="button"
+                          aria-label="Clear pause hotkey"
+                          onClick={() => pauseShortcutField.handleChange("")}
+                        >
+                          <X className="size-3.5" />
+                        </InputGroupButton>
+                      )}
+                      <InputGroupButton
+                        size="icon-xs"
+                        type="button"
+                        aria-label={
+                          recordingPause ? "Cancel" : "Record pause hotkey"
+                        }
+                        onClick={togglePauseRecording}
+                      >
+                        {recordingPause ? (
+                          <X className="size-3.5" />
+                        ) : (
+                          <Keyboard className="size-3.5" />
+                        )}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {invalidOf(pauseShortcutField.state.meta) && (
+                    <FieldError errors={pauseShortcutField.state.meta.errors} />
                   )}
                 </Field>
                 <DialogFooter>

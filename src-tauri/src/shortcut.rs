@@ -1,11 +1,11 @@
-//! Global shortcut registration for toggling dictation.
+//! Global shortcut registration for toggling dictation and pausing.
 //!
 //! On Linux, global shortcuts are captured by reading the physical keyboard
 //! via `evdev` (see [`crate::keyboard_listener`]), because
 //! `tauri-plugin-global-shortcut` only works over X11 and fails silently on
 //! Wayland. On other platforms the plugin is used directly.
 //!
-//! The shortcut is read from settings; re-register after a settings change.
+//! The shortcuts are read from settings; re-register after a settings change.
 
 #[cfg(target_os = "linux")]
 mod linux {
@@ -19,13 +19,16 @@ mod linux {
     /// or the listener torn down on re-registration.
     static LISTENER: Mutex<Option<ListenerState>> = Mutex::new(None);
 
-    /// Registers the Linux `evdev` listener for the given shortcut.
-    pub fn register(app: &AppHandle, shortcut: &str) -> Result<(), String> {
+    /// Registers the Linux `evdev` listener for the given shortcuts.
+    pub fn register(app: &AppHandle, shortcut: &str, pause_shortcut: &str) -> Result<(), String> {
         let mut guard = LISTENER.lock().unwrap();
         match guard.as_ref() {
-            Some(state) => state.set_shortcut(shortcut),
+            Some(state) => {
+                state.set_shortcut(shortcut);
+                state.set_pause_shortcut(pause_shortcut);
+            }
             None => {
-                let state = keyboard_listener::start(app.clone(), shortcut);
+                let state = keyboard_listener::start(app.clone(), shortcut, pause_shortcut);
                 *guard = Some(state);
             }
         }
@@ -33,7 +36,11 @@ mod linux {
     }
 
     /// Unregisters the current listener (used before re-registering on change).
-    pub fn unregister(_app: &AppHandle, _shortcut: &str) -> Result<(), String> {
+    pub fn unregister(
+        _app: &AppHandle,
+        _shortcut: &str,
+        _pause_shortcut: &str,
+    ) -> Result<(), String> {
         if let Some(state) = LISTENER.lock().unwrap().take() {
             state.shutdown();
         }
@@ -46,7 +53,19 @@ mod non_linux {
     use tauri::{AppHandle, Emitter};
     use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
-    pub fn register(app: &AppHandle, shortcut: &str) -> Result<(), String> {
+    pub fn register(app: &AppHandle, shortcut: &str, pause_shortcut: &str) -> Result<(), String> {
+        register_one(app, shortcut, true)?;
+        register_one(app, pause_shortcut, false)?;
+        Ok(())
+    }
+
+    pub fn unregister(app: &AppHandle, shortcut: &str, pause_shortcut: &str) -> Result<(), String> {
+        unregister_one(app, shortcut)?;
+        unregister_one(app, pause_shortcut)?;
+        Ok(())
+    }
+
+    fn register_one(app: &AppHandle, shortcut: &str, is_dictation: bool) -> Result<(), String> {
         let parsed: Shortcut = shortcut
             .parse()
             .map_err(|e| format!("Invalid shortcut '{shortcut}': {e}"))?;
@@ -54,10 +73,18 @@ mod non_linux {
         app.global_shortcut()
             .on_shortcut(parsed, move |app_handle, _scut, event| match event.state {
                 ShortcutState::Pressed => {
-                    let _ = app_handle.emit("dictation-pressed", ());
+                    if is_dictation {
+                        let _ = app_handle.emit("dictation-pressed", ());
+                    } else {
+                        let _ = app_handle.emit("pause-pressed", ());
+                    }
                 }
                 ShortcutState::Released => {
-                    let _ = app_handle.emit("dictation-released", ());
+                    if is_dictation {
+                        let _ = app_handle.emit("dictation-released", ());
+                    } else {
+                        let _ = app_handle.emit("pause-released", ());
+                    }
                 }
             })
             .map_err(|e| format!("Failed to register shortcut '{shortcut}': {e}"))?;
@@ -65,7 +92,7 @@ mod non_linux {
         Ok(())
     }
 
-    pub fn unregister(app: &AppHandle, shortcut: &str) -> Result<(), String> {
+    fn unregister_one(app: &AppHandle, shortcut: &str) -> Result<(), String> {
         let parsed: Shortcut = shortcut
             .parse()
             .map_err(|e| format!("Invalid shortcut '{shortcut}': {e}"))?;

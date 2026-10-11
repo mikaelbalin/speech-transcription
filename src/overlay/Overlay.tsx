@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Mic, MicOff } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DictationTranscript } from "@/components/dictation/dictation-transcript";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -20,6 +20,22 @@ export default function Overlay() {
   const [shortcut, setShortcut] = useState("");
   const [transcript, setTranscript] = useState("");
   const levelRef = useRef<number>(0);
+  // Mirror of `paused` kept in a ref so the `pause-pressed` listener (registered
+  // once on mount) reads the current value instead of a stale closure.
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  const togglePause = useCallback(() => {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPaused(next);
+    invoke(next ? "pause_transcription" : "resume_transcription").catch((e) =>
+      console.error(e),
+    );
+  }, []);
 
   useEffect(() => {
     invoke<{ shortcut?: string }>("get_settings")
@@ -47,6 +63,9 @@ export default function Overlay() {
       listen("resumed", () => {
         setPaused(false);
       }),
+      listen("pause-pressed", () => {
+        togglePause();
+      }),
       listen<string>("transcription-delta", (e) => {
         setTranscript((prev) => prev + e.payload);
       }),
@@ -57,13 +76,7 @@ export default function Overlay() {
         u.then((f) => f());
       }
     };
-  }, []);
-
-  const togglePause = () => {
-    invoke(paused ? "resume_transcription" : "pause_transcription").catch((e) =>
-      console.error(e),
-    );
-  };
+  }, [togglePause]);
 
   const handleClear = () => {
     setTranscript("");

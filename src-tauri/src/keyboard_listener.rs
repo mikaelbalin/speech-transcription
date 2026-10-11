@@ -15,8 +15,9 @@
 //!      emits a `dictation-pressed` event; when the main key is released, emits
 //!      a `dictation-released` event. The frontend decides whether a press
 //!      toggles dictation or starts push-to-talk based on the activation mode.
+//!      The pause shortcut emits `pause-pressed` / `pause-released` instead.
 //!   4. Re-scans devices periodically to tolerate hotplug, and rebuilds its
-//!      target whenever the configured shortcut changes.
+//!      targets whenever a configured shortcut changes.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -62,6 +63,33 @@ fn code_to_key_code(code: &str) -> Option<KeyCode> {
         "keyx" => KeyCode::KEY_X,
         "keyy" => KeyCode::KEY_Y,
         "keyz" => KeyCode::KEY_Z,
+        // Single letters (non-DOM shorthand, e.g. an older default of `ctrl+alt+p`).
+        "a" => KeyCode::KEY_A,
+        "b" => KeyCode::KEY_B,
+        "c" => KeyCode::KEY_C,
+        "d" => KeyCode::KEY_D,
+        "e" => KeyCode::KEY_E,
+        "f" => KeyCode::KEY_F,
+        "g" => KeyCode::KEY_G,
+        "h" => KeyCode::KEY_H,
+        "i" => KeyCode::KEY_I,
+        "j" => KeyCode::KEY_J,
+        "k" => KeyCode::KEY_K,
+        "l" => KeyCode::KEY_L,
+        "m" => KeyCode::KEY_M,
+        "n" => KeyCode::KEY_N,
+        "o" => KeyCode::KEY_O,
+        "p" => KeyCode::KEY_P,
+        "q" => KeyCode::KEY_Q,
+        "r" => KeyCode::KEY_R,
+        "s" => KeyCode::KEY_S,
+        "t" => KeyCode::KEY_T,
+        "u" => KeyCode::KEY_U,
+        "v" => KeyCode::KEY_V,
+        "w" => KeyCode::KEY_W,
+        "x" => KeyCode::KEY_X,
+        "y" => KeyCode::KEY_Y,
+        "z" => KeyCode::KEY_Z,
         // Numbers
         "digit0" => KeyCode::KEY_0,
         "digit1" => KeyCode::KEY_1,
@@ -288,21 +316,30 @@ impl ModifierState {
 
 /// Message sent from the settings thread to the listener thread.
 enum Command {
-    /// Replace the active shortcut target (empty string = disabled).
-    Update(String),
+    /// Replace the active dictation shortcut target (empty string = disabled).
+    UpdateDictation(String),
+    /// Replace the active pause shortcut target (empty string = disabled).
+    UpdatePause(String),
     /// Stop the listener thread.
     Shutdown,
 }
 
-/// The shared, hot-swappable shortcut target.
+/// The shared, hot-swappable shortcut targets.
 pub struct ListenerState {
     sender: Sender<Command>,
 }
 
 impl ListenerState {
-    /// Requests a shortcut change. Safe to call from any thread.
+    /// Requests a dictation-shortcut change. Safe to call from any thread.
     pub fn set_shortcut(&self, shortcut: &str) {
-        let _ = self.sender.send(Command::Update(shortcut.to_string()));
+        let _ = self
+            .sender
+            .send(Command::UpdateDictation(shortcut.to_string()));
+    }
+
+    /// Requests a pause-shortcut change. Safe to call from any thread.
+    pub fn set_pause_shortcut(&self, shortcut: &str) {
+        let _ = self.sender.send(Command::UpdatePause(shortcut.to_string()));
     }
 
     /// Stops the listener thread.
@@ -313,32 +350,39 @@ impl ListenerState {
 
 /// Starts the Linux keyboard listener and returns a handle used to update or
 /// stop it. The listener runs on its own thread and emits `dictation-pressed`
-/// / `dictation-released` through the Tauri `AppHandle`.
-pub fn start(app: AppHandle, shortcut: &str) -> ListenerState {
+/// / `dictation-released` and `pause-pressed` / `pause-released` through the
+/// Tauri `AppHandle`.
+pub fn start(app: AppHandle, shortcut: &str, pause_shortcut: &str) -> ListenerState {
     let (sender, receiver): (Sender<Command>, Receiver<Command>) = channel();
 
-    let target = Arc::new(Mutex::new(parse_shortcut(shortcut)));
-    let target_clone = Arc::clone(&target);
+    let dictation_target = Arc::new(Mutex::new(parse_shortcut(shortcut)));
+    let pause_target = Arc::new(Mutex::new(parse_shortcut(pause_shortcut)));
 
     let listener_state = ListenerState {
         sender: sender.clone(),
     };
 
     thread::spawn(move || {
-        listener_loop(app, receiver, target_clone);
+        listener_loop(app, receiver, dictation_target, pause_target);
     });
 
     listener_state
 }
 
 /// The main listener loop.
-fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<Option<Target>>>) {
+fn listener_loop(
+    app: AppHandle,
+    receiver: Receiver<Command>,
+    dictation_target: Arc<Mutex<Option<Target>>>,
+    pause_target: Arc<Mutex<Option<Target>>>,
+) {
     let mut devices: Vec<KeyboardDevice> = Vec::new();
     let mut state = ModifierState::default();
-    // True once the shortcut's main key has been pressed while the modifiers
+    // True once a shortcut's main key has been pressed while the modifiers
     // matched, and has not yet been released. Prevents repeat-press events from
     // OS auto-repeat and lets us emit a single release event on key-up.
-    let held = AtomicBool::new(false);
+    let dictation_held = AtomicBool::new(false);
+    let pause_held = AtomicBool::new(false);
 
     // Re-scan devices every few seconds to pick up hotplugged keyboards.
     let rescan = Duration::from_secs(5);
@@ -348,10 +392,15 @@ fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<
         // Process any pending commands (shortcut updates / shutdown).
         while let Ok(cmd) = receiver.try_recv() {
             match cmd {
-                Command::Update(shortcut) => {
-                    let mut guard = target.lock().unwrap();
+                Command::UpdateDictation(shortcut) => {
+                    let mut guard = dictation_target.lock().unwrap();
                     *guard = parse_shortcut(&shortcut);
-                    held.store(false, Ordering::SeqCst);
+                    dictation_held.store(false, Ordering::SeqCst);
+                }
+                Command::UpdatePause(shortcut) => {
+                    let mut guard = pause_target.lock().unwrap();
+                    *guard = parse_shortcut(&shortcut);
+                    pause_held.store(false, Ordering::SeqCst);
                 }
                 Command::Shutdown => return,
             }
@@ -376,25 +425,35 @@ fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<
                         continue;
                     }
 
-                    let current = target.lock().unwrap().clone();
-                    let Some(target) = current else {
-                        continue;
-                    };
+                    let dictation = dictation_target.lock().unwrap().clone();
+                    let pause = pause_target.lock().unwrap().clone();
 
-                    // Only the main key matters here (modifiers already tracked).
-                    if code != target.key {
-                        continue;
+                    // Handle the dictation shortcut (main key matches).
+                    if dictation.as_ref().is_some_and(|t| code == t.key) {
+                        let target = dictation.as_ref().unwrap();
+                        if value == 0 {
+                            if dictation_held.swap(false, Ordering::SeqCst) {
+                                let _ = app.emit("dictation-released", ());
+                            }
+                        } else if !dictation_held.swap(true, Ordering::SeqCst)
+                            && modifiers_match(&state, target)
+                        {
+                            let _ = app.emit("dictation-pressed", ());
+                        }
                     }
 
-                    if value == 0 {
-                        // Released: emit the release event and re-arm for the
-                        // next press.
-                        if held.swap(false, Ordering::SeqCst) {
-                            let _ = app.emit("dictation-released", ());
+                    // Handle the pause shortcut (main key matches).
+                    if pause.as_ref().is_some_and(|t| code == t.key) {
+                        let target = pause.as_ref().unwrap();
+                        if value == 0 {
+                            if pause_held.swap(false, Ordering::SeqCst) {
+                                let _ = app.emit("pause-released", ());
+                            }
+                        } else if !pause_held.swap(true, Ordering::SeqCst)
+                            && modifiers_match(&state, target)
+                        {
+                            let _ = app.emit("pause-pressed", ());
                         }
-                    } else if !held.swap(true, Ordering::SeqCst) && modifiers_match(&state, &target)
-                    {
-                        let _ = app.emit("dictation-pressed", ());
                     }
                 }
             }

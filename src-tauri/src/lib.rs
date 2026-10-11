@@ -25,7 +25,7 @@ pub fn run() {
         .manage(Arc::new(TranscriptionManager::new()))
         .setup(|app| {
             let settings = settings::get_settings(app.handle());
-            let _ = shortcut::register(app.handle(), &settings.shortcut);
+            let _ = shortcut::register(app.handle(), &settings.shortcut, &settings.pause_shortcut);
             overlay::create_overlay(app.handle());
 
             Ok(())

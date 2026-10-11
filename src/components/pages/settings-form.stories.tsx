@@ -47,6 +47,7 @@ export const Prefilled: Story = {
       sampleRate: 16000,
       targetDelayMs: null,
       shortcut: "ctrl+alt+space",
+      pauseShortcut: "ctrl+alt+keyp",
       baseUrl: "wss://api.mistral.ai",
       inputDeviceId: "",
       activationMode: "toggle",

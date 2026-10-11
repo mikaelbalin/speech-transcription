@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
 
 use crate::managers::TranscriptionManager;
 
@@ -21,7 +21,7 @@ pub fn stop_transcription(manager: State<'_, Arc<TranscriptionManager>>) {
 #[tauri::command]
 pub fn pause_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionManager>>) {
     if manager.pause() {
-        let _ = app.emit("paused", ());
+        crate::overlay::emit_overlay(&app, "paused", ());
     }
 }
 
@@ -29,7 +29,7 @@ pub fn pause_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionM
 #[tauri::command]
 pub fn resume_transcription(app: AppHandle, manager: State<'_, Arc<TranscriptionManager>>) {
     if manager.resume() {
-        let _ = app.emit("resumed", ());
+        crate::overlay::emit_overlay(&app, "resumed", ());
     }
 }
 

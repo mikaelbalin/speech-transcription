@@ -17,18 +17,19 @@ pub fn get_models() -> Vec<ModelInfo> {
 
 /// Persists the application settings.
 ///
-/// If the shortcut changed, the global shortcut is re-registered so the new
-/// binding takes effect immediately.
+/// If either shortcut changed, the global shortcut(s) are re-registered so the
+/// new bindings take effect immediately.
 #[tauri::command]
 pub fn set_settings(app: AppHandle, settings: AppSettings) -> Result<(), String> {
     let previous = settings::get_settings(&app);
     let shortcut_changed = previous.shortcut != settings.shortcut;
+    let pause_changed = previous.pause_shortcut != settings.pause_shortcut;
 
     settings::set_settings(&app, &settings)?;
 
-    if shortcut_changed {
-        let _ = shortcut::unregister(&app, &previous.shortcut);
-        shortcut::register(&app, &settings.shortcut)?;
+    if shortcut_changed || pause_changed {
+        shortcut::unregister(&app, &previous.shortcut, &previous.pause_shortcut)?;
+        shortcut::register(&app, &settings.shortcut, &settings.pause_shortcut)?;
     }
 
     Ok(())

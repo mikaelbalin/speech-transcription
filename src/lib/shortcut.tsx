@@ -21,6 +21,11 @@ const MODIFIER_LABELS: Record<string, string> = {
 
 function formatKey(key: string): ReactNode {
   const lower = key.toLowerCase();
+  // DOM `KeyboardEvent.code` letters/digits are `KeyA`…`KeyZ` / `Digit0`…`Digit9`;
+  // the recorder lowercases them to `keya`… / `digit0`…. Map those back to their
+  // single character for display.
+  if (/^key[a-z]$/.test(lower)) return lower.slice(3).toUpperCase();
+  if (/^digit[0-9]$/.test(lower)) return lower.slice(5);
   if (lower === "space") return "Space";
   if (lower === "esc" || lower === "escape") return "Esc";
   if (lower === "enter" || lower === "return") return "Enter";
