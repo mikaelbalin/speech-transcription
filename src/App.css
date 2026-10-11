@@ -121,8 +121,9 @@
   --button-to: #f1f5f9;
   --button-icon: #0284c7;
   --button-label: #0369a1;
+  --button-shadow-color: rgba(2, 132, 199, 0.15);
   --button-shadow:
-    0 12px 32px rgba(2, 132, 199, 0.15),
+    0 12px 32px var(--button-shadow-color),
     0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
@@ -164,8 +165,9 @@
   --button-to: #1e1f25;
   --button-icon: #7df4ff;
   --button-label: #7df4ff;
+  --button-shadow-color: rgba(0, 0, 0, 0.6);
   --button-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.6),
+    0 12px 30px var(--button-shadow-color),
     inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 

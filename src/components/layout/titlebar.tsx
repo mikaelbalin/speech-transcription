@@ -1,6 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Copy, Minus, Square, X } from "lucide-react";
+import { Copy, Mic, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,9 @@ export function Titlebar() {
 
   return (
     <div className="flex h-9 items-center bg-muted select-none px-1">
+      <div className="mx-2 flex w-5 h-5 shrink-0 rounded-sm items-center justify-center bg-linear-to-tl from-transparent to-glow-soft">
+        <Mic className="size-3.5 text-white" />
+      </div>
       <Menubar>
         <MenubarMenu>
           <MenubarTrigger>File</MenubarTrigger>
@@ -81,8 +84,6 @@ export function Titlebar() {
       <div data-tauri-drag-region className="flex-1 self-stretch" />
 
       <div className="flex items-center">
-        <ModeToggle />
-
         <div className="flex items-center gap-1">
           <Button
             type="button"
