@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DictationIdle } from "@/components/dictation/dictation-idle";
 import { DictationRecording } from "@/components/dictation/dictation-recording";
 import type { AppSettings } from "@/components/pages/settings-form";
@@ -18,6 +18,13 @@ export function Dictation() {
     "toggle",
   );
 
+  // Mirror of `isRecording` kept in a ref so the push-to-talk press/release
+  // handlers read the current value synchronously. React state updates are
+  // async, so a rapid pedal tap (press+release back-to-back) would otherwise
+  // let `dictation-released` observe a stale `isRecording === false` and skip
+  // the stop, leaving dictation stuck on.
+  const isRecordingRef = useRef(false);
+
   useEffect(() => {
     invoke<AppSettings>("get_settings")
       .then((s) =>
@@ -28,6 +35,7 @@ export function Dictation() {
 
   const start = useCallback(() => {
     invoke("start_transcription");
+    isRecordingRef.current = true;
     setIsRecording(true);
     setError(null);
     setLiveText("");
@@ -35,16 +43,17 @@ export function Dictation() {
 
   const stop = useCallback(() => {
     invoke("stop_transcription");
+    isRecordingRef.current = false;
     setIsRecording(false);
   }, []);
 
   const toggle = useCallback(() => {
-    if (isRecording) {
+    if (isRecordingRef.current) {
       stop();
     } else {
       start();
     }
-  }, [isRecording, start, stop]);
+  }, [start, stop]);
 
   useEffect(() => {
     const unlisteners = [
@@ -52,13 +61,13 @@ export function Dictation() {
       // dictation; in hold (push-to-talk) mode dictation runs while held.
       listen("dictation-pressed", () => {
         if (activationMode === "hold") {
-          if (!isRecording) start();
+          if (!isRecordingRef.current) start();
         } else {
           toggle();
         }
       }),
       listen("dictation-released", () => {
-        if (activationMode === "hold" && isRecording) {
+        if (activationMode === "hold" && isRecordingRef.current) {
           stop();
         }
       }),
@@ -83,7 +92,7 @@ export function Dictation() {
         u.then((f) => f());
       }
     };
-  }, [activationMode, isRecording, start, stop, toggle]);
+  }, [activationMode, start, stop, toggle]);
 
   if (isRecording) {
     return (
