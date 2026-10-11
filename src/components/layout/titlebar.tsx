@@ -2,7 +2,6 @@ import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Copy, Mic, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Menubar,
