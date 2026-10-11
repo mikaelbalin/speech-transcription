@@ -15,6 +15,15 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -162,7 +171,81 @@ export function SettingsForm({
           </h1>
 
           <div className="flex items-center gap-2">
-            <AppHeaderActions showOnboarding />
+            <Dialog>
+              <AppHeaderActions showOnboarding showHotkeys />
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Hotkeys</DialogTitle>
+                  <DialogDescription>
+                    Configure the keyboard shortcuts used to control dictation.
+                  </DialogDescription>
+                </DialogHeader>
+                <Field data-invalid={invalidOf(shortcutField.state.meta)}>
+                  <FieldLabel htmlFor="settings-shortcut">
+                    Global Activation Hotkey
+                  </FieldLabel>
+                  <InputGroup className="justify-between">
+                    {recording ? (
+                      <InputGroupInput
+                        id="settings-shortcut"
+                        placeholder="Press a key…"
+                        readOnly
+                      />
+                    ) : hasShortcut ? (
+                      <InputGroupAddon align="inline-start">
+                        {shortcutParts(shortcut).map(({ key, node }) => (
+                          <Kbd key={key}>{node}</Kbd>
+                        ))}
+                      </InputGroupAddon>
+                    ) : (
+                      <InputGroupAddon align="inline-start">
+                        <InputGroupText>Not set</InputGroupText>
+                      </InputGroupAddon>
+                    )}
+
+                    <InputGroupAddon align="inline-end">
+                      {hasShortcut && !recording && (
+                        <InputGroupButton
+                          size="icon-xs"
+                          type="button"
+                          aria-label="Clear hotkey"
+                          onClick={() => shortcutField.handleChange("")}
+                        >
+                          <X className="size-3.5" />
+                        </InputGroupButton>
+                      )}
+                      <InputGroupButton
+                        size="icon-xs"
+                        type="button"
+                        aria-label={recording ? "Cancel" : "Record hotkey"}
+                        onClick={toggleRecording}
+                      >
+                        {recording ? (
+                          <X className="size-3.5" />
+                        ) : (
+                          <Keyboard className="size-3.5" />
+                        )}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {invalidOf(shortcutField.state.meta) && (
+                    <FieldError errors={shortcutField.state.meta.errors} />
+                  )}
+                </Field>
+                <DialogFooter>
+                  <DialogClose render={<Button variant="outline" />}>
+                    Cancel
+                  </DialogClose>
+                  <Button
+                    type="submit"
+                    form="settings-form"
+                    disabled={!canSubmit}
+                  >
+                    {isSubmitting ? "Saving…" : "Save"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       }
@@ -267,7 +350,7 @@ export function SettingsForm({
             </Field>
           </div>
 
-          {/* Row 2: Base URL & Hotkey */}
+          {/* Row 2: Base URL */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field data-invalid={invalidOf(baseUrlField.state.meta)}>
               <FieldLabel htmlFor="settings-base-url">
@@ -287,96 +370,42 @@ export function SettingsForm({
               )}
             </Field>
 
-            <Field data-invalid={invalidOf(shortcutField.state.meta)}>
-              <FieldLabel htmlFor="settings-shortcut">
-                Global Activation Hotkey
+            <Field>
+              <FieldLabel htmlFor="settings-activation-mode">
+                Activation Mode
               </FieldLabel>
-              <InputGroup className="justify-between">
-                {recording ? (
-                  <InputGroupInput
-                    id="settings-shortcut"
-                    placeholder="Press a key…"
-                    readOnly
-                  />
-                ) : hasShortcut ? (
-                  <InputGroupAddon align="inline-start">
-                    {shortcutParts(shortcut).map(({ key, node }) => (
-                      <Kbd key={key}>{node}</Kbd>
-                    ))}
-                  </InputGroupAddon>
-                ) : (
-                  <InputGroupAddon align="inline-start">
-                    <InputGroupText>Not set</InputGroupText>
-                  </InputGroupAddon>
-                )}
-
-                <InputGroupAddon align="inline-end">
-                  {hasShortcut && !recording && (
-                    <InputGroupButton
-                      size="icon-xs"
-                      type="button"
-                      aria-label="Clear hotkey"
-                      onClick={() => shortcutField.handleChange("")}
+              <Combobox
+                value={{
+                  value: activationModeField.state.value,
+                  label:
+                    activationModeField.state.value === "hold"
+                      ? "Hold to talk"
+                      : "Toggle",
+                }}
+                onValueChange={(value) => {
+                  if (value) activationModeField.handleChange(value.value);
+                }}
+              >
+                <ComboboxInput
+                  id="settings-activation-mode"
+                  showClear={false}
+                  placeholder="Select activation mode"
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    <ComboboxItem value={{ value: "toggle", label: "Toggle" }}>
+                      Toggle
+                    </ComboboxItem>
+                    <ComboboxItem
+                      value={{ value: "hold", label: "Hold to talk" }}
                     >
-                      <X className="size-3.5" />
-                    </InputGroupButton>
-                  )}
-                  <InputGroupButton
-                    size="icon-xs"
-                    type="button"
-                    aria-label={recording ? "Cancel" : "Record hotkey"}
-                    onClick={toggleRecording}
-                  >
-                    {recording ? (
-                      <X className="size-3.5" />
-                    ) : (
-                      <Keyboard className="size-3.5" />
-                    )}
-                  </InputGroupButton>
-                </InputGroupAddon>
-              </InputGroup>
-              {invalidOf(shortcutField.state.meta) && (
-                <FieldError errors={shortcutField.state.meta.errors} />
-              )}
+                      Hold to talk
+                    </ComboboxItem>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
           </div>
-
-          {/* Row 3: Activation Mode */}
-          <Field>
-            <FieldLabel htmlFor="settings-activation-mode">
-              Activation Mode
-            </FieldLabel>
-            <Combobox
-              value={{
-                value: activationModeField.state.value,
-                label:
-                  activationModeField.state.value === "hold"
-                    ? "Hold to talk"
-                    : "Toggle",
-              }}
-              onValueChange={(value) => {
-                if (value) activationModeField.handleChange(value.value);
-              }}
-            >
-              <ComboboxInput
-                id="settings-activation-mode"
-                showClear={false}
-                placeholder="Select activation mode"
-              />
-              <ComboboxContent>
-                <ComboboxList>
-                  <ComboboxItem value={{ value: "toggle", label: "Toggle" }}>
-                    Toggle — press to start, press again to stop
-                  </ComboboxItem>
-                  <ComboboxItem
-                    value={{ value: "hold", label: "Hold to talk" }}
-                  >
-                    Hold to talk — dictation runs while the shortcut is held
-                  </ComboboxItem>
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </Field>
 
           {/* Row 4: Audio Device */}
           <Field>
