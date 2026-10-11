@@ -12,8 +12,9 @@
 //!   1. Enumerates physical keyboards (devices that report `KEY_A`).
 //!   2. Reads key events, tracking the held state of the four modifiers.
 //!   3. When the shortcut's modifiers are held and its main key is pressed,
-//!      emits a single `toggle-dictation` event (and does not repeat until the
-//!      key is released and pressed again).
+//!      emits a `dictation-pressed` event; when the main key is released, emits
+//!      a `dictation-released` event. The frontend decides whether a press
+//!      toggles dictation or starts push-to-talk based on the activation mode.
 //!   4. Re-scans devices periodically to tolerate hotplug, and rebuilds its
 //!      target whenever the configured shortcut changes.
 
@@ -311,8 +312,8 @@ impl ListenerState {
 }
 
 /// Starts the Linux keyboard listener and returns a handle used to update or
-/// stop it. The listener runs on its own thread and emits `toggle-dictation`
-/// through the Tauri `AppHandle`.
+/// stop it. The listener runs on its own thread and emits `dictation-pressed`
+/// / `dictation-released` through the Tauri `AppHandle`.
 pub fn start(app: AppHandle, shortcut: &str) -> ListenerState {
     let (sender, receiver): (Sender<Command>, Receiver<Command>) = channel();
 
@@ -334,8 +335,10 @@ pub fn start(app: AppHandle, shortcut: &str) -> ListenerState {
 fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<Option<Target>>>) {
     let mut devices: Vec<KeyboardDevice> = Vec::new();
     let mut state = ModifierState::default();
-    // True once the shortcut has fired and is waiting for the main key release.
-    let fired = AtomicBool::new(false);
+    // True once the shortcut's main key has been pressed while the modifiers
+    // matched, and has not yet been released. Prevents repeat-press events from
+    // OS auto-repeat and lets us emit a single release event on key-up.
+    let held = AtomicBool::new(false);
 
     // Re-scan devices every few seconds to pick up hotplugged keyboards.
     let rescan = Duration::from_secs(5);
@@ -348,7 +351,7 @@ fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<
                 Command::Update(shortcut) => {
                     let mut guard = target.lock().unwrap();
                     *guard = parse_shortcut(&shortcut);
-                    fired.store(false, Ordering::SeqCst);
+                    held.store(false, Ordering::SeqCst);
                 }
                 Command::Shutdown => return,
             }
@@ -384,12 +387,14 @@ fn listener_loop(app: AppHandle, receiver: Receiver<Command>, target: Arc<Mutex<
                     }
 
                     if value == 0 {
-                        // Released: re-arm for the next press.
-                        fired.store(false, Ordering::SeqCst);
-                    } else if !fired.swap(true, Ordering::SeqCst)
-                        && modifiers_match(&state, &target)
+                        // Released: emit the release event and re-arm for the
+                        // next press.
+                        if held.swap(false, Ordering::SeqCst) {
+                            let _ = app.emit("dictation-released", ());
+                        }
+                    } else if !held.swap(true, Ordering::SeqCst) && modifiers_match(&state, &target)
                     {
-                        let _ = app.emit("toggle-dictation", ());
+                        let _ = app.emit("dictation-pressed", ());
                     }
                 }
             }

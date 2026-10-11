@@ -49,6 +49,7 @@ export const Prefilled: Story = {
       shortcut: "ctrl+alt+space",
       baseUrl: "wss://api.mistral.ai",
       inputDeviceId: "",
+      activationMode: "toggle",
       setupCompleted: false,
     } satisfies AppSettings,
   },

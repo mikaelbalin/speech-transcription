@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { DictationIdle } from "@/components/dictation/dictation-idle";
 import { DictationRecording } from "@/components/dictation/dictation-recording";
+import type { AppSettings } from "@/components/pages/settings-form";
 
 export type DictationErrorInfo = {
   code: string;
@@ -13,6 +14,17 @@ export function Dictation() {
   const [isRecording, setIsRecording] = useState(false);
   const [liveText, setLiveText] = useState("");
   const [error, setError] = useState<DictationErrorInfo | null>(null);
+  const [activationMode, setActivationMode] = useState<"toggle" | "hold">(
+    "toggle",
+  );
+
+  useEffect(() => {
+    invoke<AppSettings>("get_settings")
+      .then((s) =>
+        setActivationMode(s.activationMode === "hold" ? "hold" : "toggle"),
+      )
+      .catch(() => {});
+  }, []);
 
   const start = useCallback(() => {
     invoke("start_transcription");
@@ -36,7 +48,20 @@ export function Dictation() {
 
   useEffect(() => {
     const unlisteners = [
-      listen("toggle-dictation", () => toggle()),
+      // A single shortcut press/release. In toggle mode the press toggles
+      // dictation; in hold (push-to-talk) mode dictation runs while held.
+      listen("dictation-pressed", () => {
+        if (activationMode === "hold") {
+          if (!isRecording) start();
+        } else {
+          toggle();
+        }
+      }),
+      listen("dictation-released", () => {
+        if (activationMode === "hold" && isRecording) {
+          stop();
+        }
+      }),
       listen<string>("transcription-delta", (e) => {
         setLiveText((t) => t + e.payload);
       }),
@@ -58,7 +83,7 @@ export function Dictation() {
         u.then((f) => f());
       }
     };
-  }, [toggle]);
+  }, [activationMode, isRecording, start, stop, toggle]);
 
   if (isRecording) {
     return (

@@ -52,9 +52,12 @@ mod non_linux {
             .map_err(|e| format!("Invalid shortcut '{shortcut}': {e}"))?;
 
         app.global_shortcut()
-            .on_shortcut(parsed, move |app_handle, _scut, event| {
-                if event.state == ShortcutState::Pressed {
-                    let _ = app_handle.emit("toggle-dictation", ());
+            .on_shortcut(parsed, move |app_handle, _scut, event| match event.state {
+                ShortcutState::Pressed => {
+                    let _ = app_handle.emit("dictation-pressed", ());
+                }
+                ShortcutState::Released => {
+                    let _ = app_handle.emit("dictation-released", ());
                 }
             })
             .map_err(|e| format!("Failed to register shortcut '{shortcut}': {e}"))?;

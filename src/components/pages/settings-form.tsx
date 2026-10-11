@@ -44,6 +44,7 @@ export interface AppSettings {
   shortcut: string;
   baseUrl: string;
   inputDeviceId: string;
+  activationMode: "toggle" | "hold";
   setupCompleted: boolean;
 }
 
@@ -53,6 +54,7 @@ const formSchema = z.object({
   baseUrl: z.url("Must be a valid URL."),
   shortcut: z.string().min(1, "Shortcut is required."),
   inputDeviceId: z.string(),
+  activationMode: z.enum(["toggle", "hold"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -83,6 +85,7 @@ export function SettingsForm({
       baseUrl: initialSettings?.baseUrl ?? "wss://api.mistral.ai",
       shortcut: initialSettings?.shortcut ?? "ctrl+alt+space",
       inputDeviceId: initialSettings?.inputDeviceId ?? "",
+      activationMode: initialSettings?.activationMode ?? "toggle",
     } as FormValues,
     validators: {
       onChange: formSchema,
@@ -96,6 +99,7 @@ export function SettingsForm({
         sampleRate: 16000,
         targetDelayMs: null,
         inputDeviceId: value.inputDeviceId,
+        activationMode: value.activationMode,
         setupCompleted: initialSettings?.setupCompleted ?? false,
       };
       await invoke("set_settings", { settings });
@@ -108,6 +112,7 @@ export function SettingsForm({
   const baseUrlField = useField({ form, name: "baseUrl" });
   const shortcutField = useField({ form, name: "shortcut" });
   const inputDeviceIdField = useField({ form, name: "inputDeviceId" });
+  const activationModeField = useField({ form, name: "activationMode" });
 
   const { recording, toggleRecording } = useShortcutRecorder((shortcut) => {
     shortcutField.handleChange(shortcut);
@@ -123,6 +128,10 @@ export function SettingsForm({
     form.setFieldValue("baseUrl", initialSettings.baseUrl);
     form.setFieldValue("shortcut", initialSettings.shortcut);
     form.setFieldValue("inputDeviceId", initialSettings.inputDeviceId ?? "");
+    form.setFieldValue(
+      "activationMode",
+      initialSettings.activationMode ?? "toggle",
+    );
   }, [form, initialSettings]);
 
   const invalidOf = (meta: { isTouched: boolean; isValid: boolean }) =>
@@ -332,7 +341,44 @@ export function SettingsForm({
             </Field>
           </div>
 
-          {/* Row 3: Audio Device */}
+          {/* Row 3: Activation Mode */}
+          <Field>
+            <FieldLabel htmlFor="settings-activation-mode">
+              Activation Mode
+            </FieldLabel>
+            <Combobox
+              value={{
+                value: activationModeField.state.value,
+                label:
+                  activationModeField.state.value === "hold"
+                    ? "Hold to talk"
+                    : "Toggle",
+              }}
+              onValueChange={(value) => {
+                if (value) activationModeField.handleChange(value.value);
+              }}
+            >
+              <ComboboxInput
+                id="settings-activation-mode"
+                showClear={false}
+                placeholder="Select activation mode"
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxItem value={{ value: "toggle", label: "Toggle" }}>
+                    Toggle — press to start, press again to stop
+                  </ComboboxItem>
+                  <ComboboxItem
+                    value={{ value: "hold", label: "Hold to talk" }}
+                  >
+                    Hold to talk — dictation runs while the shortcut is held
+                  </ComboboxItem>
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </Field>
+
+          {/* Row 4: Audio Device */}
           <Field>
             <FieldLabel htmlFor="settings-input-device">
               Audio Input Capture Device

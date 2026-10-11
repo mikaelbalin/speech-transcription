@@ -10,6 +10,9 @@ const DEFAULT_BASE_URL: &str = "wss://api.mistral.ai";
 const DEFAULT_SAMPLE_RATE: u32 = 16000;
 const DEFAULT_SHORTCUT: &str = "ctrl+alt+space";
 
+/// Default activation mode: a single shortcut press toggles dictation on/off.
+const DEFAULT_ACTIVATION_MODE: &str = "toggle";
+
 /// A selectable realtime transcription model.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,6 +50,9 @@ pub struct AppSettings {
     pub base_url: String,
     /// Selected input (microphone) device id. Empty = system default.
     pub input_device_id: String,
+    /// How the global shortcut activates dictation: `"toggle"` (press toggles
+    /// on/off) or `"hold"` (push-to-talk — dictation runs while held).
+    pub activation_mode: String,
     /// Whether first-run host setup (udev rule + uinput access) is considered
     /// done — either applied, or explicitly skipped by the user.
     pub setup_completed: bool,
@@ -62,6 +68,7 @@ impl Default for AppSettings {
             shortcut: DEFAULT_SHORTCUT.to_string(),
             base_url: DEFAULT_BASE_URL.to_string(),
             input_device_id: String::new(),
+            activation_mode: DEFAULT_ACTIVATION_MODE.to_string(),
             setup_completed: false,
         }
     }
@@ -96,6 +103,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         shortcut: get_str("shortcut", DEFAULT_SHORTCUT),
         base_url: get_str("base_url", DEFAULT_BASE_URL),
         input_device_id: get_str("input_device_id", ""),
+        activation_mode: get_str("activation_mode", DEFAULT_ACTIVATION_MODE),
         setup_completed: read("setup_completed")
             .and_then(|v| v.as_bool())
             .unwrap_or(false),
@@ -119,6 +127,7 @@ pub fn set_settings(app: &AppHandle, settings: &AppSettings) -> Result<(), Strin
     store.set("shortcut", settings.shortcut.clone());
     store.set("base_url", settings.base_url.clone());
     store.set("input_device_id", settings.input_device_id.clone());
+    store.set("activation_mode", settings.activation_mode.clone());
     store.set("setup_completed", settings.setup_completed);
 
     Ok(())
